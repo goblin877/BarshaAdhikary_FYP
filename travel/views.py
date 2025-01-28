@@ -155,3 +155,6 @@ def trip_details(request, id):
 
 def booking_view(request):
     return render(request, 'travel/booking.html')
+
+def itinerary(request):
+    return render(request, 'travel/itinerary.html')
