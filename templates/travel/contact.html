@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact - Travel Planning App</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header Section -->
+    <header class="flex justify-between items-center px-8 py-6 bg-white shadow-md">
+        <div class="flex items-center">
+            <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-16 h-auto">
+            <span class="ml-4 text-2xl font-bold text-green-700">PLAN&TOUR</span>
+        </div>
+        <nav class="flex space-x-6">
+            <a href="{% url 'home' %}" class="text-gray-700 hover:text-green-700">Home</a>
+            <a href="{% url 'guide' %}" class="text-gray-700 hover:text-green-700">Travel Guide</a>
+            <a href="{% url 'about' %}" class="text-gray-700 hover:text-green-700">About</a>
+            <a href="{% url 'contact' %}" class="text-gray-700 hover:text-green-700">Contact</a>
+        </nav>
+    </header>
+
+    <!-- Contact Section -->
+    <section class="py-12 px-8 bg-green-50">
+        <h1 class="text-4xl font-bold text-gray-800 text-center">Contact Us</h1>
+        <p class="mt-4 text-lg text-gray-600 text-center">Have any questions or need assistance? Get in touch with us!</p>
+        
+        <!-- Display success message here if form is successfully submitted -->
+        {% if messages %}
+            <div class="alert alert-success mt-6 bg-green-200 p-4 rounded-md">
+                {% for message in messages %}
+                    <p class="text-green-800">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <div class="mt-8 max-w-2xl mx-auto">
+            <form method="POST" action="{% url 'contact' %}" class="space-y-6">
+                {% csrf_token %}
+                {{ form.as_p }}  <!-- Render form fields here -->
+                <div class="text-center">
+                    <button type="submit" class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">Send Message</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer Section -->
+    <footer class="py-8 bg-white text-center border-t border-gray-200">
+        <p class="text-gray-600">&copy; 2025 PLAN&TOUR. All rights reserved.</p>
+    </footer>
+</body>
+</html>

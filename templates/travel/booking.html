@@ -1,0 +1,73 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="flex justify-between items-center px-8 py-6 bg-white shadow-md">
+        <div class="flex items-center">
+            <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-16 h-auto">
+            <span class="ml-4 text-2xl font-bold text-green-700">PLAN&TOUR</span>
+        </div>
+        <nav class="flex space-x-6">
+            <a href="{% url 'home' %}" class="text-gray-700 hover:text-green-700">Home</a>
+            <a href="{% url 'about' %}" class="text-gray-700 hover:text-green-700">About</a>
+        </nav>
+    </header>
+
+    <!-- Booking Section -->
+    <main class="container mx-auto p-8 space-y-12">
+        <!-- Hotel Booking -->
+        <section class="relative bg-white rounded-lg shadow-md overflow-hidden">
+            <img src="{% static 'main/images/Hotel.jpg' %}" alt="Hotel" class="absolute inset-0 w-full h-[500px] object-cover opacity-30">
+            <div class="relative z-10 p-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Hotel Booking</h2>
+                <form class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="hotel-name" class="block text-gray-700 font-semibold">Hotel Name</label>
+                            <input type="text" id="hotel-name" class="border border-gray-300 rounded-lg px-4 py-2 w-full" placeholder="Enter hotel name">
+                        </div>
+                        <div>
+                            <label for="hotel-date" class="block text-gray-700 font-semibold">Booking Date</label>
+                            <input type="date" id="hotel-date" class="border border-gray-300 rounded-lg px-4 py-2 w-full">
+                        </div>
+                    </div>
+                    <button type="button" class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">Book Hotel</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Flight Booking -->
+        <section class="relative bg-white rounded-lg shadow-md overflow-hidden">
+            <img src="{% static 'main/images/Flight.jpg' %}" alt="Flight" class="absolute inset-0 w-full h-[500px] object-cover opacity-30">
+            <div class="relative z-10 p-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Flight Booking</h2>
+                <form class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="flight-destination" class="block text-gray-700 font-semibold">Destination</label>
+                            <input type="text" id="flight-destination" class="border border-gray-300 rounded-lg px-4 py-2 w-full" placeholder="Enter destination">
+                        </div>
+                        <div>
+                            <label for="flight-date" class="block text-gray-700 font-semibold">Flight Date</label>
+                            <input type="date" id="flight-date" class="border border-gray-300 rounded-lg px-4 py-2 w-full">
+                        </div>
+                    </div>
+                    <button type="button" class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">Book Flight</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-8 bg-white text-center border-t border-gray-200">
+        <p class="text-gray-600">&copy; 2025 PLAN&TOUR. All rights reserved.</p>
+    </footer>
+</body>
+</html>

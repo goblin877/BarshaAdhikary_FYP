@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header Section -->
+    <header class="flex justify-between items-center px-8 py-6 bg-white shadow-md">
+        <div class="flex items-center">
+            <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-16 h-auto">
+            <span class="ml-4 text-2xl font-bold text-green-700">PLAN&TOUR</span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <input type="text" placeholder="Search..." class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500">
+        </div>
+        <nav class="flex space-x-6">
+            <a href="{% url 'home' %}" class="text-gray-700 hover:text-green-700">Home</a>
+            <a href="{% url 'guide' %}" class="text-gray-700 hover:text-green-700">Travel Guide</a>
+            <a href="{% url 'about' %}" class="text-gray-700 hover:text-green-700">About</a>
+            <a href="#" class="text-gray-700 hover:text-green-700">Contact</a>
+        </nav>
+        <div class="flex items-center space-x-4">
+            {% if user.is_authenticated %}
+                <span class="text-gray-700">Welcome, {{ user.username }}!</span>
+                <a href="{% url 'profile' %}" class="text-green-700 border border-green-700 px-4 py-2 rounded">👤</a>
+                <form action="{% url 'logout' %}" method="POST" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="text-white bg-green-700 px-4 py-2 rounded">LogOut</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="text-white bg-green-700 px-4 py-2 rounded">LogIn</a>
+                <a href="{% url 'signup' %}" class="text-green-700 border border-green-700 px-4 py-2 rounded">SignUp</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="text-center py-12 bg-green-50">
+        <img src="{% static 'main/images/Travelling.jpg' %}" alt="About Us" class="mx-auto w-full max-w-2xl rounded-lg shadow-md">
+        <h1 class="text-4xl font-bold text-gray-800 mt-6">About PLAN&TOUR</h1>
+        <p class="mt-4 text-lg text-gray-600">Welcome to PLAN&TOUR! We are dedicated to providing you with the best travel experiences by offering customized travel guides, itineraries, and tools to make your journey seamless and unforgettable.</p>
+        <p class="mt-2 text-lg text-gray-600">Our platform is powered by advanced AI and a passionate team of travel enthusiasts who strive to optimize every aspect of your trip, from planning to execution.</p>
+        <p class="mt-2 text-lg text-gray-600">Join us and explore the world like never before!</p>
+    </section>
+
+    <!-- Middle Section -->
+    <section class="text-center py-8">
+        <a href="{% url 'booking' %}">
+            <button class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">Booking</button>
+        </a>        
+        <button class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition ml-4">Create Itinerary</button>
+    </section>
+
+    <!-- Gallery Section -->
+    <section class="py-12 px-8">
+        <h2 class="text-center text-3xl font-bold text-gray-800 mb-8">Explore Our Destinations</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <img src="{% static 'main/images/Tokyo.jpg' %}" alt="Tokyo" class="w-full rounded-lg shadow-md">
+            <img src="{% static 'main/images/Rome.jpg' %}" alt="Rome" class="w-full rounded-lg shadow-md">
+            <img src="{% static 'main/images/NYC.jpg' %}" alt="New York City" class="w-full rounded-lg shadow-md">
+            <img src="{% static 'main/images/Dubai.jpg' %}" alt="Dubai" class="w-full rounded-lg shadow-md">
+        </div>
+    </section>
+
+    <!-- Footer Section -->
+    <footer class="py-8 bg-white text-center border-t border-gray-200">
+        <p class="text-gray-600">&copy; 2025 PLAN&TOUR. All rights reserved.</p>
+    </footer>
+</body>
+</html>
