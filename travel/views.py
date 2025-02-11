@@ -3,16 +3,17 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.shortcuts import get_object_or_404
 from .forms import CustomUserCreationForm, TripForm, ProfileForm
-from .models import TravelGuide, UserProfile
-from .forms import TripForm, ProfileForm
-from .models import Trip
+from .models import TravelGuide, UserProfile, Trip
 from django.core.mail import send_mail
 from django.conf import settings
 from .forms import ContactForm
-from django.shortcuts import render
-
+import requests
+from django.http import JsonResponse
+from .models import Trip
+from datetime import date
+from .models import TripPlan
+from django.utils import timezone
 
 # Homepage view
 def home(request):
@@ -73,43 +74,70 @@ def logout_view(request):
 
 # Profile view
 @login_required
+@login_required
 def profile(request):
-    user_profile = UserProfile.objects.get(user=request.user)
-    trips = Trip.objects.filter(user=request.user)
-    return render(request, 'travel/profile.html', {'user_profile': user_profile, 'trips': trips})
+    user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    user_trips = Trip.objects.filter(user=request.user)  # Fetch user's trips
 
-# Edit Profile view
+    return render(request, 'travel/profile.html', {"user_profile": user_profile, "user_trips": user_trips})
 @login_required
 def edit_profile(request):
-    user_profile, created = UserProfile.objects.get_or_create(user=request.user)
-    
-    if request.method == 'POST':
-        form = ProfileForm(request.POST, request.FILES, instance=user_profile)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Profile updated successfully!")
-            return redirect('profile')
-    else:
-        form = ProfileForm(instance=user_profile)
+    user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
-    return render(request, 'travel/edit_profile.html', {'form': form})
+    if request.method == "POST":
+        user_profile.bio = request.POST.get("bio")
+        if request.FILES.get("profile_picture"):
+            user_profile.profile_picture = request.FILES.get("profile_picture")
+        user_profile.save()
+
+        return redirect("profile")  # Redirect to profile page after saving
+
+    return render(request, "travel/edit_profile.html", {"user_profile": user_profile})
 # Plan Trip view
 @login_required
 def plan_trip(request):
     if request.method == 'POST':
-        form = TripForm(request.POST)
-        if form.is_valid():
-            trip = form.save(commit=False)
-            trip.user = request.user  # Assign the trip to the logged-in user
-            trip.save()
-            messages.success(request, "Trip planned successfully!")
-            return redirect('profile')  # Redirect to profile page after saving the trip
-    else:
-        form = TripForm()
+        city = request.POST.get('city')
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        
+        # Convert start_date and end_date to date objects
+        start_date = date.fromisoformat(start_date)  # Assuming the format is YYYY-MM-DD
+        end_date = date.fromisoformat(end_date)
+        
+        # Validate the dates
+        today = date.today()
+        if start_date < today:
+            messages.error(request, "The start date cannot be in the past.")
+            return render(request, 'travel/plan_trip.html')
+        if end_date <= start_date:
+            messages.error(request, "The end date must be after the start date.")
+            return render(request, 'travel/plan_trip.html')
+        
+        # Save the trip plan
+        trip = Trip.objects.create(
+            user=request.user,
+            destination=city,
+            start_date=start_date,
+            end_date=end_date
+        )
+        messages.success(request, 'Trip plan saved successfully!')
+        return redirect('profile')  # Redirect to profile after saving
+        
+    return render(request, 'travel/plan_trip.html')
+# Profile view
+@login_required
+def profile_view(request):
+    # Fetch trips for the logged-in user
+    trips = Trip.objects.filter(user=request.user)
 
-    return render(request, 'travel/plan_trip.html', {'form': form})
+    # Fetch or create user profile for the logged-in user
+    user_profile, created = UserProfile.objects.get_or_create(user=request.user)  
 
-
+    return render(request, 'travel/profile.html', {
+        'trips': trips,  # Passing saved trips to the template
+        'user_profile': user_profile  # Passing edited profile data (including profile picture)
+    })
 # Guide view
 def guide_view(request):
     if request.method == 'POST':
@@ -148,13 +176,36 @@ def contact(request):
         form = ContactForm()
 
     return render(request, 'travel/contact.html', {'form': form})
+
+# Trip details view
 @login_required
 def trip_details(request, id):
-    trip = get_object_or_404(Trip, id=id, user=request.user)
+    trip = get_object_or_404(Trip, id=id, user=request.user)  # Ensure the trip belongs to the logged-in user
     return render(request, 'travel/trip_details.html', {'trip': trip})
 
+# Booking view
 def booking_view(request):
     return render(request, 'travel/booking.html')
 
+# Itinerary view
 def itinerary(request):
     return render(request, 'travel/itinerary.html')
+
+# Get city suggestions via API (for autofill)
+def get_city_suggestions(request):
+    query = request.GET.get("query", "")
+    if query:
+        username = "barsha1"  # Your GeoNames username
+        url = f"http://api.geonames.org/searchJSON?name_startsWith={query}&maxRows=10&username={username}&featureClass=P"
+        response = requests.get(url)
+        data = response.json()
+        cities = [item["name"] for item in data.get("geonames", [])]
+        return JsonResponse({"cities": cities})
+    return JsonResponse({"cities": []})
+
+@login_required
+def delete_trip(request, id):  # 'id' matches the URL pattern
+    trip = get_object_or_404(Trip, id=id, user=request.user)
+    trip.delete()
+    messages.success(request, "Trip deleted successfully!")
+    return redirect('profile')  # Redirect to profile page
