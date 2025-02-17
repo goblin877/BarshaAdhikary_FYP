@@ -7,6 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ trip.destination }} - Trip Details</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    
+    <!-- Leaflet.js JavaScript -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -61,7 +66,24 @@
                 </ul>
             </div>
         </div>
-        
+
+        <!-- Displaying images from Unsplash -->
+        {% if images %}
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-700">Destination Images</h3>
+                <div class="flex space-x-4 overflow-x-auto mt-4">
+                    {% for image in images %}
+                        <img src="{{ image.urls.regular }}" alt="{{ image.alt_description }}" class="w-64 h-40 object-cover rounded-lg shadow-md">
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <p>No images found for this destination.</p>
+        {% endif %}
+
+        <!-- Map Section -->
+        <div id="map" style="height: 400px;"></div>
+
         <div class="mt-6">
             <a href="/profile/" class="text-green-700 hover:text-green-800">Back to Profile</a>
         </div>
@@ -71,6 +93,31 @@
     <footer class="py-8 bg-white text-center border-t border-gray-200">
         <p class="text-gray-600">&copy; 2025 PLAN&TOUR. All rights reserved.</p>
     </footer>
+
+    <!-- Map Initialization Script -->
+    <script>
+        // Ensure latitude and longitude are passed correctly from Django template
+        var latitude = parseFloat("{{ trip.latitude|default:0 }}");
+        var longitude = parseFloat("{{ trip.longitude|default:0 }}");
+
+
+        
+        if (latitude !== 0 && longitude !== 0) {
+            // Initialize the map with dynamic coordinates
+            var map = L.map('map').setView([latitude, longitude], 13);
+
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Add a marker for the destination
+            var marker = L.marker([latitude, longitude]).addTo(map);
+            marker.bindPopup("<b>{{ trip.destination }}</b><br>Your trip destination.").openPopup();
+        } else {
+            console.log("Invalid latitude or longitude");
+        }
+    </script>
 
 </body>
 </html>

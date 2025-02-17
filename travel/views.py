@@ -14,6 +14,8 @@ from .models import Trip
 from datetime import date
 from .models import TripPlan
 from django.utils import timezone
+import requests
+UNSPLASH_ACCESS_KEY = "a8F8irghpyAE0DS4Wp602aus2Pci7-I5UoTA_aJgSU8"
 
 # Homepage view
 def home(request):
@@ -74,7 +76,6 @@ def logout_view(request):
 
 # Profile view
 @login_required
-@login_required
 def profile(request):
     user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
     user_trips = Trip.objects.filter(user=request.user)  # Fetch user's trips
@@ -82,17 +83,20 @@ def profile(request):
     return render(request, 'travel/profile.html', {"user_profile": user_profile, "user_trips": user_trips})
 @login_required
 def edit_profile(request):
+    # Get or create the UserProfile instance for the logged-in user
     user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
-        user_profile.bio = request.POST.get("bio")
-        if request.FILES.get("profile_picture"):
-            user_profile.profile_picture = request.FILES.get("profile_picture")
-        user_profile.save()
+        # Use ProfileForm to handle form submission
+        form = ProfileForm(request.POST, request.FILES, instance=user_profile)
+        if form.is_valid():
+            form.save()  # Save the updated profile data
+            messages.success(request, "Profile updated successfully!")
+            return redirect("profile")  # Redirect to profile page after saving
+    else:
+        form = ProfileForm(instance=user_profile)
 
-        return redirect("profile")  # Redirect to profile page after saving
-
-    return render(request, "travel/edit_profile.html", {"user_profile": user_profile})
+    return render(request, "travel/edit_profile.html", {"form": form})
 # Plan Trip view
 @login_required
 def plan_trip(request):
@@ -178,11 +182,37 @@ def contact(request):
     return render(request, 'travel/contact.html', {'form': form})
 
 # Trip details view
-@login_required
-def trip_details(request, id):
-    trip = get_object_or_404(Trip, id=id, user=request.user)  # Ensure the trip belongs to the logged-in user
-    return render(request, 'travel/trip_details.html', {'trip': trip})
+def trip_details(request, trip_id):
+    trip = get_object_or_404(Trip, id=trip_id)  # Get the trip object using trip_id
+    
+    # If latitude and longitude are not set, get them from an external API
+    if not trip.latitude or not trip.longitude:
+        geonames_url = f"http://api.geonames.org/searchJSON?name={trip.destination}&maxRows=1&username=Barsha1"
+        response = requests.get(geonames_url)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data["geonames"]:
+                trip.latitude = data["geonames"][0]["lat"]
+                trip.longitude = data["geonames"][0]["lng"]
+                trip.save()  # Save the trip with latitude and longitude if they are missing
+        else:
+            trip.latitude = None
+            trip.longitude = None
+    
+    # Fetch images from Unsplash API
+    unsplash_url = f"https://api.unsplash.com/search/photos?query={trip.destination}&client_id=a8F8irghpyAE0DS4Wp602aus2Pci7-I5UoTA_aJgSU8"
+    response = requests.get(unsplash_url)
+    
+    if response.status_code == 200:
+        images = response.json().get("results", [])
+    else:
+        images = []
 
+    return render(request, 'travel/trip_details.html', {
+        'trip': trip,
+        'images': images,
+    })
 # Booking view
 def booking_view(request):
     return render(request, 'travel/booking.html')
@@ -209,3 +239,17 @@ def delete_trip(request, id):  # 'id' matches the URL pattern
     trip.delete()
     messages.success(request, "Trip deleted successfully!")
     return redirect('profile')  # Redirect to profile page
+
+def load_more_images(request, trip_id):
+    # Example logic to get more images using Unsplash API
+    trip = Trip.objects.get(id=trip_id)  # Get trip instance if needed
+
+    # Example of fetching more images from Unsplash API
+    unsplash_url = f"https://api.unsplash.com/photos?page=2&client_id=a8F8irghpyAE0DS4Wp602aus2Pci7-I5UoTA_aJgSU8"
+    response = requests.get(unsplash_url)
+    images = response.json()
+
+    # Prepare the images for returning
+    image_data = [{'url': image['urls']['regular'], 'alt_description': image['alt_description']} for image in images]
+    
+    return JsonResponse({'images': image_data})

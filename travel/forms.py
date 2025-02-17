@@ -27,7 +27,7 @@ class ContactForm(forms.Form):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
-        fields = ['full_name', 'dob', 'contact_number', 'profile_picture']
+        fields = ['full_name', 'dob', 'contact_number', 'profile_picture', 'bio']
         widgets = {
             'dob': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }

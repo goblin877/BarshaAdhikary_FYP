@@ -1,15 +1,17 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-# Model to store the trip plans
 class Trip(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Associate trip with a user
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     destination = models.CharField(max_length=255)
     start_date = models.DateField()
     end_date = models.DateField()
-
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    
     def __str__(self):
-        return f"Trip to {self.destination} from {self.start_date} to {self.end_date}"
+        return f"{self.destination} - {self.start_date} to {self.end_date}"
+
 # Model for User Profile (Only keep this one)
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
