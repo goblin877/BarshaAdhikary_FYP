@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ trip.destination }} - Trip Details</title>
+    <title>Trip to {{ trip.destination }} - Trip Details</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <!-- Leaflet.js CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -19,7 +19,7 @@
     <header class="flex justify-between items-center px-8 py-6 bg-white shadow-md">
         <div class="flex items-center">
             <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-16 h-auto">
-            <span class="ml-4 text-2xl font-bold text-green-700">PLAN&TOUR</span>
+            <span class="ml-4 text-3xl font-extrabold text-green-700">PLAN&TOUR</span>
         </div>
         <div class="flex items-center space-x-4">
             <input type="text" placeholder="Search..." class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500">
@@ -46,46 +46,66 @@
     </header>
 
     <!-- Main Content Section -->
-    <main class="container mx-auto p-6">
-        <h1 class="text-4xl font-bold text-gray-800 mb-4">{{ trip.destination }}</h1>
-        
-        <div class="bg-white border border-gray-200 rounded-lg shadow-md p-6">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Trip Details</h2>
-            
-            <p class="text-lg text-gray-600 mb-2"><strong>Start Date:</strong> {{ trip.start_date }}</p>
-            <p class="text-lg text-gray-600 mb-2"><strong>End Date:</strong> {{ trip.end_date }}</p>
-            
-            <div class="mt-4">
-                <h3 class="text-xl font-semibold text-gray-700">Additional Information</h3>
-                <p class="text-gray-600 mt-2">You can add any extra details about the trip here, such as planned activities, notes, or travel tips.</p>
-                <!-- Example of additional details -->
-                <ul class="list-disc pl-6 mt-2">
-                    <li>Flight details: Example flight info</li>
-                    <li>Accommodation: Example hotel details</li>
-                    <li>Activities: Example activity or event</li>
-                </ul>
+    <main class="container mx-auto p-6 flex">
+        <div class="flex-1">
+            <!-- Trip Title -->
+            <h1 class="text-5xl font-extrabold text-gray-800 mb-6 text-center">{{ trip.destination }}</h1>
+
+            <!-- Booking Button -->
+            <div class="flex justify-end mb-4">
+                <a href="{% url 'booking' %}">
+                    <button class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">Booking</button>
+                </a>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-lg shadow-md p-6">
+                <h2 class="text-3xl font-semibold text-gray-700 mb-6">Trip Details</h2>
+
+                <p class="text-lg text-gray-600 mb-2"><strong>Start Date:</strong> {{ trip.start_date }}</p>
+                <p class="text-lg text-gray-600 mb-2"><strong>End Date:</strong> {{ trip.end_date }}</p>
+
+                <div class="mt-6">
+                    <h3 class="text-2xl font-semibold text-gray-700 mb-3">Additional Information</h3>
+                    <p class="text-gray-600 mt-2">You can add any extra details about the trip here, such as planned activities, notes, or travel tips.</p>
+                    <!-- Example of additional details -->
+                    <ul class="list-disc pl-6 mt-2">
+                        <li>Flight details: Example flight info</li>
+                        <li>Accommodation: Example hotel details</li>
+                        <li>Activities: Example activity or event</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Displaying images from Unsplash -->
+            {% if images %}
+                <div class="mt-6">
+                    <h3 class="text-2xl font-semibold text-gray-700">Destination Images</h3>
+                    <div class="flex space-x-4 overflow-x-auto mt-4">
+                        {% for image in images %}
+                            <img src="{{ image.urls.regular }}" alt="{{ image.alt_description }}" class="w-64 h-40 object-cover rounded-lg shadow-md">
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <p>No images found for this destination.</p>
+            {% endif %}
+
+            <div class="mt-6">
+                <a href="/profile/" class="text-green-700 hover:text-green-800">Back to Profile</a>
             </div>
         </div>
 
-        <!-- Displaying images from Unsplash -->
-        {% if images %}
-            <div class="mt-6">
-                <h3 class="text-lg font-semibold text-gray-700">Destination Images</h3>
-                <div class="flex space-x-4 overflow-x-auto mt-4">
-                    {% for image in images %}
-                        <img src="{{ image.urls.regular }}" alt="{{ image.alt_description }}" class="w-64 h-40 object-cover rounded-lg shadow-md">
-                    {% endfor %}
+        <!-- Sidebar for Map -->
+        <div class="w-1/3 ml-6">
+            <div id="map" style="height: 400px; width: 100%;"></div>
+            
+            <!-- Weather Information below the Map -->
+            <div id="weather-info" class="bg-white p-4 mt-6 rounded-lg shadow-md">
+                <h3 class="text-2xl font-semibold text-gray-700">Today's Weather Information</h3>
+                <div id="weather-details" class="text-gray-600 mt-2">
+                    <p>Loading weather data...</p>
                 </div>
             </div>
-        {% else %}
-            <p>No images found for this destination.</p>
-        {% endif %}
-
-        <!-- Map Section -->
-        <div id="map" style="height: 400px;"></div>
-
-        <div class="mt-6">
-            <a href="/profile/" class="text-green-700 hover:text-green-800">Back to Profile</a>
         </div>
     </main>
 
@@ -96,12 +116,9 @@
 
     <!-- Map Initialization Script -->
     <script>
-        // Ensure latitude and longitude are passed correctly from Django template
         var latitude = parseFloat("{{ trip.latitude|default:0 }}");
         var longitude = parseFloat("{{ trip.longitude|default:0 }}");
 
-
-        
         if (latitude !== 0 && longitude !== 0) {
             // Initialize the map with dynamic coordinates
             var map = L.map('map').setView([latitude, longitude], 13);
@@ -114,6 +131,26 @@
             // Add a marker for the destination
             var marker = L.marker([latitude, longitude]).addTo(map);
             marker.bindPopup("<b>{{ trip.destination }}</b><br>Your trip destination.").openPopup();
+
+            // Fetch weather data using OpenWeatherMap API
+            var apiKey = "ac7dfa82b795fc910c53c9999e427fca";  // Replace with your API key
+            var weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
+
+            fetch(weatherUrl)
+                .then(response => response.json())
+                .then(data => {
+                    var weatherDetails = `
+                        <p><strong>Temperature:</strong> ${data.main.temp}°C</p>
+                        <p><strong>Weather:</strong> ${data.weather[0].description}</p>
+                        <p><strong>Humidity:</strong> ${data.main.humidity}%</p>
+                        <p><strong>Wind Speed:</strong> ${data.wind.speed} m/s</p>
+                    `;
+                    document.getElementById('weather-details').innerHTML = weatherDetails;
+                })
+                .catch(error => {
+                    document.getElementById('weather-details').innerHTML = "<p>Unable to load weather data.</p>";
+                    console.error("Error fetching weather data:", error);
+                });
         } else {
             console.log("Invalid latitude or longitude");
         }

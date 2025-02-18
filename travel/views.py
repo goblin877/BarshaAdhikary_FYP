@@ -253,3 +253,56 @@ def load_more_images(request, trip_id):
     image_data = [{'url': image['urls']['regular'], 'alt_description': image['alt_description']} for image in images]
     
     return JsonResponse({'images': image_data})
+
+def hotel_search(request):
+    if request.method == "POST":
+        destination = request.POST.get("destination")
+        check_in = request.POST.get("check_in")
+        check_out = request.POST.get("check_out")
+        no_of_people = request.POST.get("no_of_people")
+        no_of_rooms = request.POST.get("no_of_rooms")
+
+        # Define the API URL and headers
+        api_url = "https://hotels4.p.rapidapi.com/locations/search"
+        headers = {
+            "X-RapidAPI-Key": settings.RAPIDAPI_KEY,  # Ensure API key is in settings
+            "X-RapidAPI-Host": "hotels4.p.rapidapi.com"
+        }
+
+        # Define the parameters for the hotel search request
+        params = {
+            "query": destination,
+            "locale": "en_US",
+            "checkin_date": check_in,
+            "checkout_date": check_out,
+            "rooms": no_of_rooms,
+            "adults": no_of_people,
+        }
+
+        # Make the API request
+        response = requests.get(api_url, headers=headers, params=params)
+
+        # Handle the API response
+        if response.status_code == 200:
+            data = response.json()
+            hotels = data.get("suggestions", [])
+
+            # Extract relevant hotel information
+            hotel_list = []
+            for hotel in hotels:
+                hotel_info = {
+                    'name': hotel.get("name"),
+                    'location': hotel.get("location"),
+                    'price': hotel.get("price"),
+                    'image': hotel.get("image_url"),
+                    'booking_link': hotel.get("link")
+                }
+                hotel_list.append(hotel_info)
+
+            # Pass the hotel list to the template
+            return render(request, "travel/search_result.html", {"hotels": hotel_list})
+
+        else:
+            print(f"Error: {response.status_code}")
+
+    return redirect('booking')  # Redirect to the booking page if it's not a POST request
