@@ -40,3 +40,16 @@ class TripPlan(models.Model):
 
     def __str__(self):
         return f"{self.city} ({self.start_date} - {self.end_date})"
+class Hotel(models.Model):
+    name = models.CharField(max_length=255)
+    address = models.CharField(max_length=255)
+    city = models.CharField(max_length=255)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    price_per_night = models.FloatField()
+    rating = models.FloatField(null=True, blank=True)
+    amenities = models.TextField(null=True, blank=True)  # Store amenities if needed
+    booking_url = models.URLField(null=True, blank=True)  # Store the booking URL if needed
+
+    def __str__(self):
+        return self.name

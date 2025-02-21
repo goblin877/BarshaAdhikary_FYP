@@ -21,5 +21,6 @@ urlpatterns = [
     path('booking/', booking_view, name='booking'),
     path('itinerary/', views.itinerary, name='itinerary'),
     path('get-cities/', get_city_suggestions, name='get_city_suggestions'),
-    path('hotel-search/', views.hotel_search, name='hotel_search'),  # For city suggestions
+    path('hotel-search/', views.hotel_search, name='hotel_search'),
+    path('flight-info/', views.flight_info, name='flight_info'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

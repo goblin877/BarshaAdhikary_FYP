@@ -15,6 +15,13 @@ from datetime import date
 from .models import TripPlan
 from django.utils import timezone
 import requests
+from .models import Hotel
+import requests
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.conf import settings
+from django.http import JsonResponse
+
 UNSPLASH_ACCESS_KEY = "a8F8irghpyAE0DS4Wp602aus2Pci7-I5UoTA_aJgSU8"
 
 # Homepage view
@@ -255,54 +262,49 @@ def load_more_images(request, trip_id):
     return JsonResponse({'images': image_data})
 
 def hotel_search(request):
-    if request.method == "POST":
-        destination = request.POST.get("destination")
-        check_in = request.POST.get("check_in")
-        check_out = request.POST.get("check_out")
-        no_of_people = request.POST.get("no_of_people")
-        no_of_rooms = request.POST.get("no_of_rooms")
+    if request.method == 'POST':
+        # Capture form data
+        destination = request.POST.get('destination')
+        check_in = request.POST.get('check_in')
+        check_out = request.POST.get('check_out')
+        no_of_people = request.POST.get('no_of_people')
+        no_of_rooms = request.POST.get('no_of_rooms')
+        adults_or_kids = request.POST.get('adults_or_kids')  # Will use this for setting adults or children
 
-        # Define the API URL and headers
-        api_url = "https://hotels4.p.rapidapi.com/locations/search"
-        headers = {
-            "X-RapidAPI-Key": settings.RAPIDAPI_KEY,  # Ensure API key is in settings
-            "X-RapidAPI-Host": "hotels4.p.rapidapi.com"
-        }
-
-        # Define the parameters for the hotel search request
+        # Define the parameters dynamically from the form
         params = {
-            "query": destination,
-            "locale": "en_US",
+            "location": destination,
             "checkin_date": check_in,
             "checkout_date": check_out,
-            "rooms": no_of_rooms,
-            "adults": no_of_people,
+            "adults_count": no_of_people if adults_or_kids == "Adults" else 0,
+            "children_count": no_of_people if adults_or_kids == "Kids" else 0,
+            "room_count": no_of_rooms,
         }
 
-        # Make the API request
-        response = requests.get(api_url, headers=headers, params=params)
+        url = "https://booking-com.p.rapidapi.com/v2/room_list"
+        headers = {
+            'x-rapidapi-host': "booking-com.p.rapidapi.com",
+            'x-rapidapi-key': "7fad4ad608mshabc8633d905ae3ap1e045bjsn31e85c3e28f2"  # Replace with your actual RapidAPI key
+        }
 
-        # Handle the API response
+        response = requests.get(url, headers=headers, params=params)
+
         if response.status_code == 200:
-            data = response.json()
-            hotels = data.get("suggestions", [])
-
-            # Extract relevant hotel information
-            hotel_list = []
-            for hotel in hotels:
-                hotel_info = {
-                    'name': hotel.get("name"),
-                    'location': hotel.get("location"),
-                    'price': hotel.get("price"),
-                    'image': hotel.get("image_url"),
-                    'booking_link': hotel.get("link")
-                }
-                hotel_list.append(hotel_info)
-
-            # Pass the hotel list to the template
-            return render(request, "travel/search_result.html", {"hotels": hotel_list})
+            hotels = response.json().get('result', [])
+            return render(request, 'travel/hotel_search.html', {'hotels': hotels})
 
         else:
-            print(f"Error: {response.status_code}")
+            # Handle API error
+            return render(request, 'travel/hotel_search.html', {'error': 'Failed to fetch hotels'})
 
-    return redirect('booking')  # Redirect to the booking page if it's not a POST request
+    return render(request, 'travel/hotel_search.html')
+def flight_info(request):
+    if request.method == 'GET':
+        # You can add flight search parameters here similar to hotel search
+        flight_origin = request.GET.get('flight_origin')
+        flight_destination = request.GET.get('flight_destination')
+        flight_date = request.GET.get('flight_date')
+
+        # Call to your flight API or logic to fetch flight info goes here...
+
+    return render(request, 'travel/flight_info.html')  # Adjust this as needed
