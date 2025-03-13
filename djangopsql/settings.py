@@ -166,5 +166,4 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'np03cs4a220206@heraldcollege.edu.np'  # Replace with your email address
 EMAIL_HOST_PASSWORD = '@barsha1234.np'  # Replace with your email password
 
-RAPIDAPI_KEY = '7fad4ad608mshabc8633d905ae3ap1e045bjsn31e85c3e28f2'
-
+RAPIDAPI_KEY  = '7fad4ad608mshabc8633d905ae3ap1e045bjsn31e85c3e28f2'

@@ -8,6 +8,11 @@ from .models import TravelGuide, UserProfile, Trip
 from django.core.mail import send_mail
 from django.conf import settings
 from .forms import ContactForm
+from urllib.parse import quote
+import requests
+import hmac
+import hashlib
+import time
 import requests
 from django.http import JsonResponse
 from .models import Trip
@@ -23,6 +28,10 @@ from django.conf import settings
 from django.http import JsonResponse
 
 UNSPLASH_ACCESS_KEY = "a8F8irghpyAE0DS4Wp602aus2Pci7-I5UoTA_aJgSU8"
+
+# API credentials
+API_KEY = '4cd60a8ccc51377e38c59a30439dabec'
+API_SECRET = '8e4622e2e3'
 
 # Homepage view
 def home(request):
@@ -260,44 +269,55 @@ def load_more_images(request, trip_id):
     image_data = [{'url': image['urls']['regular'], 'alt_description': image['alt_description']} for image in images]
     
     return JsonResponse({'images': image_data})
+def generate_signature(api_key, api_secret, url, method, body=""):
+    timestamp = str(int(time.time()))  # Current timestamp
+    message = f"{method} {url} {api_key} {api_secret} {timestamp} {body}"
+    
+    # Generate HMAC-SHA256 hash
+    signature = hmac.new(api_secret.encode(), message.encode(), hashlib.sha256).hexdigest()
+    
+    return signature
+
 
 def hotel_search(request):
-    if request.method == 'POST':
-        # Capture form data
-        destination = request.POST.get('destination')
-        check_in = request.POST.get('check_in')
-        check_out = request.POST.get('check_out')
-        no_of_people = request.POST.get('no_of_people')
-        no_of_rooms = request.POST.get('no_of_rooms')
-        adults_or_kids = request.POST.get('adults_or_kids')  # Will use this for setting adults or children
+    query = request.GET.get('query', 'Paris')  # Get the search query (default to 'Paris')
+    check_in_date = request.GET.get('check_in', '2025-03-11')  # Default check-in date
+    check_out_date = request.GET.get('check_out', '2025-03-18')  # Default check-out date
 
-        # Define the parameters dynamically from the form
-        params = {
-            "location": destination,
-            "checkin_date": check_in,
-            "checkout_date": check_out,
-            "adults_count": no_of_people if adults_or_kids == "Adults" else 0,
-            "children_count": no_of_people if adults_or_kids == "Kids" else 0,
-            "room_count": no_of_rooms,
-        }
+    # Define the API URL and parameters
+    url = f'https://tripadvisor16.p.rapidapi.com/api/v1/hotels/searchHotels'
+    headers = {
+        'x-rapidapi-host': 'tripadvisor16.p.rapidapi.com',
+        'x-rapidapi-key': '013c0f53c1msh6647f1c15c03db0p1c0739jsncfa956be7c4d'  # Replace with your API key
+    }
+    params = {
+        'geoId': query,  # Destination name or geoId (e.g., Paris)
+        'checkIn': check_in_date,
+        'checkOut': check_out_date,
+        'pageNumber': 1,
+        'currencyCode': 'USD'
+    }
 
-        url = "https://booking-com.p.rapidapi.com/v2/room_list"
-        headers = {
-            'x-rapidapi-host': "booking-com.p.rapidapi.com",
-            'x-rapidapi-key': "7fad4ad608mshabc8633d905ae3ap1e045bjsn31e85c3e28f2"  # Replace with your actual RapidAPI key
-        }
-
+    try:
+        # Make the API request
         response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()  # Check for any HTTP errors
+        hotels_data = response.json()
+        
+        # Extract hotel information from the API response
+        hotels = hotels_data.get('data', [])
+        
+    except requests.exceptions.RequestException as e:
+        # Handle any errors in the request
+        hotels = []
+        print(f"Error fetching data: {e}")
 
-        if response.status_code == 200:
-            hotels = response.json().get('result', [])
-            return render(request, 'travel/hotel_search.html', {'hotels': hotels})
-
-        else:
-            # Handle API error
-            return render(request, 'travel/hotel_search.html', {'error': 'Failed to fetch hotels'})
-
-    return render(request, 'travel/hotel_search.html')
+    return render(request, 'travel/hotel_search.html', {
+        'hotels': hotels,
+        'query': query,
+        'check_in': check_in_date,
+        'check_out': check_out_date
+    })
 def flight_info(request):
     if request.method == 'GET':
         # You can add flight search parameters here similar to hotel search
@@ -308,3 +328,99 @@ def flight_info(request):
         # Call to your flight API or logic to fetch flight info goes here...
 
     return render(request, 'travel/flight_info.html')  # Adjust this as needed
+
+import requests
+from django.http import JsonResponse
+
+# Amadeus API credentials (store these securely, e.g., in environment variables)
+CLIENT_ID = "mdWOlvVehsn6eJPLohv4f6gCAkgsX8Tb"
+CLIENT_SECRET = "YxzJh4uQu8Cahvcz"
+
+def get_amadeus_access_token():
+    """Fetches the access token from Amadeus API"""
+    url = "https://test.api.amadeus.com/v1/security/oauth2/token"
+    payload = {
+        "grant_type": "client_credentials",
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET
+    }
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+
+    response = requests.post(url, data=payload, headers=headers)
+
+    if response.status_code == 200:
+        return response.json().get("access_token")
+    else:
+        return None
+
+def fetch_hotels(request):
+    """Fetches hotels using Amadeus API"""
+    access_token = get_amadeus_access_token()
+    if not access_token:
+        return JsonResponse({"error": "Failed to obtain access token"}, status=400)
+
+    # Example: Searching hotels in a city (replace with actual query parameters)
+    hotel_search_url = "https://test.api.amadeus.com/v1/reference-data/locations/hotels/by-city"
+    params = {
+        "cityCode": "PAR",  # Change this to the required city
+        "radius": "10",
+        "radiusUnit": "KM"
+    }
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    response = requests.get(hotel_search_url, params=params, headers=headers)
+    
+    if response.status_code == 200:
+        return JsonResponse(response.json(), safe=False)
+    else:
+        return JsonResponse({"error": "Failed to fetch hotels"}, status=response.status_code)
+
+# Function to get hotel data from Amadeus
+def get_hotels(request):
+    access_token = get_amadeus_access_token()
+    if not access_token:
+        return render(request, 'hotel_search.html', {'error': 'Failed to obtain access token'})
+
+    destination = request.GET.get('query', 'PAR')  # Get city code from user input
+
+    url = 'https://test.api.amadeus.com/v1/reference-data/locations/hotels/by-city'
+    headers = {'Authorization': f'Bearer {access_token}'}
+    params = {
+        'cityCode': destination,
+        'radius': 5,
+        'radiusUnit': 'KM',
+        'hotelSource': 'ALL'
+    }
+
+    response = requests.get(url, headers=headers, params=params)
+    
+    if response.status_code == 200:
+        hotels = response.json().get('data', [])
+        hotel_data = []
+
+        for hotel in hotels:
+            address = hotel.get('address', {})
+            address_line = address.get('lines', [None])[0]  # Safely get address
+            
+            hotel_data.append({
+                'name': hotel['name'],
+                'address': address_line,
+                'city': address.get('cityName', ''),
+                'country': address.get('countryCode', ''),
+                'image': hotel['media'][0]['uri'] if hotel.get('media') else None
+            })
+
+        return render(request, 'hotel_search.html', {
+            'hotels': hotel_data,
+            'query': destination
+        })
+    
+    else:
+        return render(request, 'travel/hotel_search.html', {
+            'error': 'Failed to fetch hotel data',
+            'query': destination
+        })

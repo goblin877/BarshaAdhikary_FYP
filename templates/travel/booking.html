@@ -71,31 +71,18 @@
             {% endif %}
 
             <div class="flex mb-6">
-                <button id="hotel-toggle" class="tab-active px-6 py-3 w-1/2 text-lg font-semibold rounded-lg transition-all ease-in-out duration-200 tab-inactive">Hotel</button>
-                <button id="flight-toggle" class="tab-inactive px-6 py-3 w-1/2 text-lg font-semibold rounded-lg transition-all ease-in-out duration-200 tab-inactive">Flights</button>
+                <button id="hotel-toggle" class="tab-active px-6 py-3 w-1/2 text-lg font-semibold rounded-lg transition-all ease-in-out duration-200">Hotel</button>
+                <button id="flight-toggle" class="tab-inactive px-6 py-3 w-1/2 text-lg font-semibold rounded-lg transition-all ease-in-out duration-200">Flights</button>
             </div>
 
-            <form id="search-form" method="POST" class="space-y-6 bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <!-- Hotel Form -->
+            <form id="search-form" method="POST" action="{% url 'hotel_search' %}">
                 {% csrf_token %}
-            
-                <!-- Hotel Form Fields -->
                 <div id="hotel-form" class="space-y-4">
                     <div>
                         <label for="destination" class="text-sm text-gray-700 font-semibold">Destination</label>
                         <input type="text" id="destination" name="destination" placeholder="Enter destination" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
                     </div>
-            
-                    <div class="flex space-x-4">
-                        <div class="w-1/2">
-                            <label for="no-of-people" class="text-sm text-gray-700 font-semibold">No. of People</label>
-                            <input type="number" id="no-of-people" name="no_of_people" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                        </div>
-                        <div class="w-1/2">
-                            <label for="no-of-rooms" class="text-sm text-gray-700 font-semibold">No. of Rooms</label>
-                            <input type="number" id="no-of-rooms" name="no_of_rooms" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                        </div>
-                    </div>
-            
                     <div class="flex space-x-4">
                         <div class="w-1/2">
                             <label for="check-in" class="text-sm text-gray-700 font-semibold">Check-in Date</label>
@@ -106,80 +93,13 @@
                             <input type="date" id="check-out" name="check_out" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
                         </div>
                     </div>
-            
-                    <div class="flex space-x-4">
-                        <div class="w-1/2">
-                            <label for="adults-or-kids" class="text-sm text-gray-700 font-semibold">Adults or Kids</label>
-                            <select id="adults-or-kids" name="adults_or_kids" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                                <option value="adults">Adults</option>
-                                <option value="kids">Kids</option>
-                            </select>
-                        </div>
+                    <div class="text-center">
+                        <button type="submit" class="bg-green-700 text-white px-8 py-3 rounded-lg text-lg hover:bg-green-800 transition-all">Search Hotels</button>
                     </div>
                 </div>
-            
-                <!-- Flight Form Fields -->
-                <div id="flight-form" class="hidden space-y-6">
-                    <div>
-                        <label for="flight-type" class="text-sm text-gray-700 font-semibold">Flight Type</label>
-                        <select id="flight-type" name="flight_type" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                            <option value="one-way">One-way</option>
-                            <option value="round-trip">Round-trip</option>
-                        </select>
-                    </div>
-            
-                    <div>
-                        <label for="flight-origin" class="text-sm text-gray-700 font-semibold">Departure City</label>
-                        <input type="text" id="flight-origin" name="flight_origin" placeholder="Enter departure city" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                    </div>
-            
-                    <div>
-                        <label for="flight-destination" class="text-sm text-gray-700 font-semibold">Destination City</label>
-                        <input type="text" id="flight-destination" name="flight_destination" placeholder="Enter destination city" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                    </div>
-            
-                    <div class="flex space-x-4">
-                        <div class="w-1/2">
-                            <label for="flight-departure" class="text-sm text-gray-700 font-semibold">Departure Date</label>
-                            <input type="date" id="flight-departure" name="flight_departure" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                        </div>
-                        <div class="w-1/2">
-                            <label for="flight-return" class="text-sm text-gray-700 font-semibold">Return Date</label>
-                            <input type="date" id="flight-return" name="flight_return" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                        </div>
-                    </div>
-                </div>
-            
-                <button type="submit" id="submit-button" class="w-full bg-green-700 text-white py-3 rounded-lg text-lg">Search</button>
             </form>
         </div>
     </div>
-
-    <script>
-        document.getElementById('hotel-toggle').addEventListener('click', function() {
-            document.getElementById('hotel-form').classList.remove('hidden');
-            document.getElementById('flight-form').classList.add('hidden');
-            document.getElementById('hotel-image').classList.remove('hidden');
-            document.getElementById('flight-image').classList.add('hidden');
-            document.getElementById('hotel-toggle').classList.add('tab-active');
-            document.getElementById('hotel-toggle').classList.remove('tab-inactive');
-            document.getElementById('flight-toggle').classList.add('tab-inactive');
-            document.getElementById('flight-toggle').classList.remove('tab-active');
-            document.getElementById('search-form').action = "{% url 'hotel_search' %}";
-        });
-
-        document.getElementById('flight-toggle').addEventListener('click', function() {
-            document.getElementById('flight-form').classList.remove('hidden');
-            document.getElementById('hotel-form').classList.add('hidden');
-            document.getElementById('flight-image').classList.remove('hidden');
-            document.getElementById('hotel-image').classList.add('hidden');
-            document.getElementById('flight-toggle').classList.add('tab-active');
-            document.getElementById('flight-toggle').classList.remove('tab-inactive');
-            document.getElementById('hotel-toggle').classList.add('tab-inactive');
-            document.getElementById('hotel-toggle').classList.remove('tab-active');
-            document.getElementById('search-form').action = "{% url 'flight_info' %}";
-        });
-    </script>
 </body>
 
 </html>

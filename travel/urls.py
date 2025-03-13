@@ -23,4 +23,7 @@ urlpatterns = [
     path('get-cities/', get_city_suggestions, name='get_city_suggestions'),
     path('hotel-search/', views.hotel_search, name='hotel_search'),
     path('flight-info/', views.flight_info, name='flight_info'),
+ #   path('get-access-token/', views.get_amadeus_access_token, name='get_amadeus_access_token'),
+   # path('get-hotels/', views.get_hotels, name='get_hotels'),
+    path("get-hotels/", views.fetch_hotels, name="get_hotels"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
