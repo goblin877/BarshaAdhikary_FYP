@@ -44,9 +44,30 @@ class Hotel(models.Model):
     name = models.CharField(max_length=255)
     address = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    image_url = models.URLField()
-    booking_link = models.URLField()
+    rating = models.DecimalField(max_digits=3, decimal_places=1)  # Rating out of 5
+    image_url = models.URLField(blank=True)  # URL for the image
+    booking_link = models.URLField(blank=True)
 
     def __str__(self):
         return self.name
 
+class HotelStaticInfo(models.Model):
+    SLOT_CHOICES = [
+        ('slot_1', 'Best Hotel in the city'),
+        ('slot_2', 'Best service Provided'),
+        ('slot_3', 'Most Luxurious'),
+        ('slot_4', 'Affordable Hotel Option'),
+        ('slot_5', 'Best View'),
+    ]
+
+    hotel_slot = models.CharField(max_length=10, choices=SLOT_CHOICES)  
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    rating = models.DecimalField(max_digits=3, decimal_places=1)
+    image = models.ImageField(upload_to='hotel_images/', blank=True, null=True)  # Changed to ImageField
+    availability = models.BooleanField(default=True)
+
+    def get_slot_title(self):
+        return dict(self.SLOT_CHOICES).get(self.hotel_slot, 'Unknown Slot')
+
+    def __str__(self):
+        return f"Static Info for {self.get_slot_title()} - {'Available' if self.availability else 'Not Available'}"

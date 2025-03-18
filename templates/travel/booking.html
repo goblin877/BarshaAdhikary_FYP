@@ -76,7 +76,7 @@
             </div>
 
             <!-- Hotel Form -->
-            <form id="search-form" method="POST" action="{% url 'hotel_search' %}">
+            <form id="search-form" method="POST" action="{% url 'get-hotels' %}">
                 {% csrf_token %}
                 <div id="hotel-form" class="space-y-4">
                     <div>

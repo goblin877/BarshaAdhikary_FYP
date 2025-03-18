@@ -1,0 +1,95 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Search</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    
+    <!-- Header Section -->
+    <header class="flex justify-between items-center px-8 py-6 bg-white shadow-md">
+        <div class="flex items-center">
+            <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-16 h-auto">
+            <span class="ml-4 text-2xl font-bold text-green-700">PLAN&TOUR</span>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="text-center py-12 bg-green-50">
+        <h1 class="text-4xl font-bold text-gray-800">Flight Search</h1>
+        <p class="mt-4 text-lg text-gray-600">Enter your flight details to find the best flights for your trip!</p>
+    </section>
+
+    <!-- Flight Search Form -->
+    <section class="max-w-lg mx-auto mt-8 bg-white p-6 rounded-md shadow-md">
+        <form action="{% url 'search_flights_page' %}" method="POST">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="departureCity" class="block text-gray-700">Departure City</label>
+                <input type="text" id="departureCity" name="departureCity" class="w-full p-2 border border-gray-300 rounded-md" required>
+            </div>
+            <div class="mb-4">
+                <label for="arrivalCity" class="block text-gray-700">Arrival City</label>
+                <input type="text" id="arrivalCity" name="arrivalCity" class="w-full p-2 border border-gray-300 rounded-md" required>
+            </div>
+            <div class="mb-4">
+                <label for="departureDate" class="block text-gray-700">Departure Date</label>
+                <input type="date" id="departureDate" name="departureDate" class="w-full p-2 border border-gray-300 rounded-md" required>
+            </div>
+            <div class="mb-4">
+                <label for="numPassengers" class="block text-gray-700">Number of Passengers</label>
+                <input type="number" id="numPassengers" name="numPassengers" class="w-full p-2 border border-gray-300 rounded-md" required min="1">
+            </div>
+            <div class="mb-4">
+                <button type="submit" class="w-full py-2 bg-green-700 text-white font-semibold rounded-md">Search Flights</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Flight Search Results -->
+    {% if flights %}
+    <section class="overflow-x-auto max-w-4xl mx-auto my-8">
+        <h2 class="text-3xl text-center font-bold text-gray-800 mb-4">Flight Search Results</h2>
+        <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
+            <thead class="bg-green-700 text-white">
+                <tr>
+                    <th class="py-3 px-6">Airline</th>
+                    <th class="py-3 px-6">Flight Number</th>
+                    <th class="py-3 px-6">Departure Time</th>
+                    <th class="py-3 px-6">Arrival Time</th>
+                    <th class="py-3 px-6">Price</th>
+                    <th class="py-3 px-6">Departure City</th>
+                    <th class="py-3 px-6">Arrival City</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for flight in flights %}
+                <tr class="border-b">
+                    <td class="py-3 px-6">{{ flight.airline }}</td>
+                    <td class="py-3 px-6">{{ flight.flightNumber }}</td>
+                    <td class="py-3 px-6">{{ flight.departureTime }}</td>
+                    <td class="py-3 px-6">{{ flight.arrivalTime }}</td>
+                    <td class="py-3 px-6">${{ flight.price }}</td>
+                    <td class="py-3 px-6">{{ flight.departureCity }}</td>
+                    <td class="py-3 px-6">{{ flight.arrivalCity }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% else %}
+    <section class="text-center mt-8">
+        <p class="text-gray-600 text-lg">No flights found for the selected criteria.</p>
+    </section>
+    {% endif %}
+
+    <!-- Footer Section -->
+    <footer class="py-6 bg-white text-center mt-12 border-t border-gray-200">
+        <p class="text-gray-600">&copy; 2025 PLAN&TOUR. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>

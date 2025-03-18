@@ -1,114 +1,63 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flight Information</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        .flight-info-card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .flight-info-card .airline-logo {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-
-        .flight-info-card .price-tag {
-            background-color: #48bb78;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 50px;
-            font-weight: bold;
-        }
-
-        .flight-info-card .departure-time,
-        .flight-info-card .arrival-time {
-            font-size: 1.25rem;
-            font-weight: bold;
-        }
-
-        .flight-info-card .duration {
-            font-size: 1.1rem;
-            color: #4a5568;
-        }
-
-        .flight-info-card .book-button {
-            background-color: #48bb78;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            width: 100%;
-            text-align: center;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .container { width: 50%; margin: auto; padding: 20px; }
+        form { margin-bottom: 20px; }
+        input, button { margin: 5px; padding: 10px; }
+        .flights { margin-top: 20px; }
+        .flight-card { border: 1px solid #ddd; padding: 10px; margin: 10px 0; background: #f9f9f9; }
     </style>
 </head>
+<body>
+    <div class="container">
+        <h2>Find Your Flight</h2>
 
-<body class="bg-gray-50 min-h-screen">
+        <!-- Flight Search Form -->
+        <form method="GET" action="{% url 'flight_info' %}">
+            <label>From:</label>
+            <input type="text" name="origin" placeholder="Airport Code (e.g., LON)" required>
+            
+            <label>To:</label>
+            <input type="text" name="destination" placeholder="Airport Code (e.g., NYC)" required>
+            
+            <label>Departure Date:</label>
+            <input type="date" name="departure_date" required>
+            
+            <label>Adults:</label>
+            <input type="number" name="adults" min="1" value="1" required>
+            
+            <button type="submit">Search Flights</button>
+        </form>
 
-    <!-- Header Section -->
-    <header class="flex justify-between items-center px-8 py-6 bg-white shadow-md">
-        <div class="flex items-center">
-            <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-16 h-auto">
-            <span class="ml-4 text-3xl font-bold text-green-700">PLAN&TOUR</span>
-        </div>
-        <nav class="flex space-x-6">
-            <a href="{% url 'home' %}" class="text-lg text-gray-700 hover:text-green-700 font-semibold">Home</a>
-            <a href="{% url 'guide' %}" class="text-lg text-gray-700 hover:text-green-700 font-semibold">Travel Guide</a>
-            <a href="{% url 'about' %}" class="text-lg text-gray-700 hover:text-green-700 font-semibold">About</a>
-        </nav>
-    </header>
+        <!-- Display Flight Results -->
+        <div class="flights">
+            {% if error %}
+                <p style="color: red;">{{ error }}</p>
+            {% elif flights %}
+                <h3>Available Flights</h3>
+                {% for flight in flights %}
+                    <div class="flight-card">
+                        <strong>Flight:</strong> 
+                        {{ flight.itineraries.0.segments.0.carrierCode }} 
+                        {{ flight.itineraries.0.segments.0.flightNumber }} <br>
 
-    <!-- Flight Info Section -->
-    <div class="max-w-6xl mx-auto mt-12 bg-white p-12 rounded-lg shadow-xl">
-        <h2 class="text-4xl font-bold text-green-700 mb-8 text-center">Flight Information</h2>
-
-        {% if flight %}
-        <div class="flight-info-card space-y-6">
-            <div class="flex items-center space-x-6">
-                <img src="{{ flight.airline_logo }}" alt="{{ flight.airline }}" class="airline-logo">
-                <div>
-                    <h3 class="text-2xl font-semibold">{{ flight.airline }}</h3>
-                    <p class="text-gray-700">{{ flight.flight_number }}</p>
-                </div>
-            </div>
-
-            <div class="flex justify-between">
-                <div>
-                    <p class="text-xl font-semibold text-green-700">{{ flight.departure_city }} to {{ flight.arrival_city }}</p>
-                    <p class="text-sm text-gray-600">Departure: {{ flight.departure_time }}</p>
-                    <p class="text-sm text-gray-600">Arrival: {{ flight.arrival_time }}</p>
-                </div>
-                <div class="text-center">
-                    <div class="price-tag">
-                        ${{ flight.price }}
+                        <strong>From:</strong> {{ flight.itineraries.0.segments.0.departure.iataCode }} <br>
+                        <strong>To:</strong> {{ flight.itineraries.0.segments.0.arrival.iataCode }} <br>
+                        <strong>Departure:</strong> {{ flight.itineraries.0.segments.0.departure.at }} <br>
+                        <strong>Arrival:</strong> {{ flight.itineraries.0.segments.0.arrival.at }} <br>
+                        <strong>Price:</strong> {{ flight.price.total }} {{ flight.price.currency }}
                     </div>
-                </div>
-            </div>
-
-            <div class="text-center my-6">
-                <p class="duration">Duration: {{ flight.duration }}</p>
-            </div>
-
-            <div class="text-center">
-                <a href="{% url 'book_flight' flight.id %}" class="book-button">
-                    Book Flight
-                </a>
-            </div>
+                {% endfor %}
+            {% else %}
+                <p>No flights found. Try again.</p>
+            {% endif %}
         </div>
-        {% else %}
-        <p class="text-center text-xl text-gray-600">No flight details available.</p>
-        {% endif %}
     </div>
-
 </body>
 </html>

@@ -103,7 +103,14 @@
             <div id="weather-info" class="bg-white p-4 mt-6 rounded-lg shadow-md">
                 <h3 class="text-2xl font-semibold text-gray-700">Today's Weather Information</h3>
                 <div id="weather-details" class="text-gray-600 mt-2">
-                    <p>Loading weather data...</p>
+                    {% if weather_info %}
+                        <p><strong>Temperature:</strong> {{ weather_info.temperature }}°C</p>
+                        <p><strong>Weather:</strong> {{ weather_info.description }}</p>
+                        <p><strong>Humidity:</strong> {{ weather_info.humidity }}%</p>
+                        <p><strong>Wind Speed:</strong> {{ weather_info.wind_speed }} m/s</p>
+                    {% else %}
+                        <p>Unable to fetch weather data.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -131,26 +138,6 @@
             // Add a marker for the destination
             var marker = L.marker([latitude, longitude]).addTo(map);
             marker.bindPopup("<b>{{ trip.destination }}</b><br>Your trip destination.").openPopup();
-
-            // Fetch weather data using OpenWeatherMap API
-            var apiKey = "ac7dfa82b795fc910c53c9999e427fca";  // Replace with your API key
-            var weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
-
-            fetch(weatherUrl)
-                .then(response => response.json())
-                .then(data => {
-                    var weatherDetails = `
-                        <p><strong>Temperature:</strong> ${data.main.temp}°C</p>
-                        <p><strong>Weather:</strong> ${data.weather[0].description}</p>
-                        <p><strong>Humidity:</strong> ${data.main.humidity}%</p>
-                        <p><strong>Wind Speed:</strong> ${data.wind.speed} m/s</p>
-                    `;
-                    document.getElementById('weather-details').innerHTML = weatherDetails;
-                })
-                .catch(error => {
-                    document.getElementById('weather-details').innerHTML = "<p>Unable to load weather data.</p>";
-                    console.error("Error fetching weather data:", error);
-                });
         } else {
             console.log("Invalid latitude or longitude");
         }
