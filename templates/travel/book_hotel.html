@@ -1,0 +1,56 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ hotel.name }} - Booking</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div class="max-w-4xl mx-auto py-12">
+        <h1 class="text-3xl font-bold text-gray-800">{{ hotel.name }}</h1>
+        <p class="text-gray-600"><strong>Class:</strong> {{ hotel.hotel_class }}</p>
+        <p class="text-gray-600"><strong>Rating:</strong> {{ hotel.overall_rating }} / 5</p>
+        <p class="text-gray-600"><strong>Description:</strong> {{ hotel.description }}</p>
+        <p class="text-green-700 font-bold"><strong>Price per night:</strong> {{ hotel.rate_per_night }}</p>
+        <p class="text-gray-600"><strong>Reviews:</strong> {{ hotel.reviews }}</p>
+
+        <!-- Hotel Images -->
+        <div class="grid grid-cols-2 gap-4 mt-4">
+            {% for image in hotel.images %}
+                <img src="{{ image }}" alt="{{ hotel.name }}" class="rounded-lg shadow-md">
+            {% endfor %}
+        </div>
+
+        <!-- More Details Link -->
+        <a href="{{ hotel.link }}" target="_blank" class="block mt-4 text-green-700 hover:underline">More Details</a>
+
+        <!-- Booking Form -->
+        <div class="mt-6 bg-white p-6 shadow-md rounded-lg">
+            <h2 class="text-xl font-semibold text-gray-800">Proceed to Payment</h2>
+            <button id="checkout-button" class="mt-4 px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800">
+                Proceed to Payment
+            </button>
+        </div>
+    </div>
+
+    <!-- Pass Stripe Public Key from Django to JavaScript -->
+    <script>
+        var stripe = Stripe("{{ STRIPE_PUBLIC_KEY }}");  // Stripe public key
+        var checkoutButton = document.getElementById("checkout-button");
+
+        checkoutButton.addEventListener("click", function () {
+            fetch("/create-checkout-session/")
+                .then(response => response.json())
+                .then(session => {
+                    return stripe.redirectToCheckout({ sessionId: session.sessionId });
+                })
+                .catch(error => console.error("Error:", error));
+        });
+    </script>
+
+</body>
+</html>

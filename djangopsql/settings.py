@@ -165,3 +165,5 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'np03cs4a220206@heraldcollege.edu.np'  # Replace with your email address
 EMAIL_HOST_PASSWORD = '@barsha1234.np'  # Replace with your email password
+
+

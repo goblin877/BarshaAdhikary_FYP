@@ -1,12 +1,16 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ trip.destination }} - Trip Details</title>
+    <title>Trip to {{ trip.destination }} - Trip Details</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    
+    <!-- Leaflet.js JavaScript -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -14,7 +18,7 @@
     <header class="flex justify-between items-center px-8 py-6 bg-white shadow-md">
         <div class="flex items-center">
             <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-16 h-auto">
-            <span class="ml-4 text-2xl font-bold text-green-700">PLAN&TOUR</span>
+            <span class="ml-4 text-3xl font-extrabold text-green-700">PLAN&TOUR</span>
         </div>
         <div class="flex items-center space-x-4">
             <input type="text" placeholder="Search..." class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500">
@@ -41,36 +45,190 @@
     </header>
 
     <!-- Main Content Section -->
-    <main class="container mx-auto p-6">
-        <h1 class="text-4xl font-bold text-gray-800 mb-4">{{ trip.destination }}</h1>
-        
-        <div class="bg-white border border-gray-200 rounded-lg shadow-md p-6">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Trip Details</h2>
-            
-            <p class="text-lg text-gray-600 mb-2"><strong>Start Date:</strong> {{ trip.start_date }}</p>
-            <p class="text-lg text-gray-600 mb-2"><strong>End Date:</strong> {{ trip.end_date }}</p>
-            
-            <div class="mt-4">
-                <h3 class="text-xl font-semibold text-gray-700">Additional Information</h3>
-                <p class="text-gray-600 mt-2">You can add any extra details about the trip here, such as planned activities, notes, or travel tips.</p>
-                <!-- Example of additional details -->
-                <ul class="list-disc pl-6 mt-2">
-                    <li>Flight details: Example flight info</li>
-                    <li>Accommodation: Example hotel details</li>
-                    <li>Activities: Example activity or event</li>
-                </ul>
+    <main class="container mx-auto p-6 flex">
+        <div class="flex-1">
+            <!-- Trip Title -->
+            <h1 class="text-5xl font-extrabold text-gray-800 mb-6 text-center">{{ trip.destination }}</h1>
+
+            <!-- Redirect Buttons for Hotel and Flight Search -->
+            <div class="flex justify-center mb-4 space-x-4">
+                <button id="searchHotelBtn" class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">Search Hotels</button>
+                <button id="searchFlightBtn" class="bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-800 transition">Search Flights</button>
+            </div>
+
+            <!-- Hotel Search Form (Hidden initially) -->
+            <section id="hotelSearchForm" class="max-w-lg mx-auto mt-8 bg-white p-6 rounded-md shadow-md hidden">
+                <form action="{% url 'fetch_hotels' %}" method="GET">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="city" class="block text-gray-700">City</label>
+                        <input type="text" id="city" name="city" class="w-full p-2 border border-gray-300 rounded-md" value="{{ trip.destination }}" required readonly>
+                    </div>
+                    <div class="mb-4">
+                        <label for="check_in_date" class="block text-gray-700">Check-in Date</label>
+                        <input type="date" id="check_in_date" name="check_in_date" class="w-full p-2 border border-gray-300 rounded-md" value="{{ trip.start_date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="check_out_date" class="block text-gray-700">Check-out Date</label>
+                        <input type="date" id="check_out_date" name="check_out_date" class="w-full p-2 border border-gray-300 rounded-md" value="{{ trip.end_date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <button type="submit" class="w-full py-2 bg-green-700 text-white font-semibold rounded-md">Search Hotels</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="flightSearchForm" class="max-w-lg mx-auto mt-8 bg-white p-6 rounded-md shadow-md hidden">
+                <form action="{% url 'search_flights_page' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="departureCity" class="block text-gray-700">Departure City</label>
+                        <input type="text" id="departureCity" name="departureCity" class="w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="arrivalCity" class="block text-gray-700">Arrival City</label>
+                        <input type="text" id="arrivalCity" name="arrivalCity" class="w-full p-2 border border-gray-300 rounded-md" value="{{ trip.destination }}" readonly>
+                    </div>
+                    <div class="mb-4">
+                        <label for="departureDate" class="block text-gray-700">Departure Date</label>
+                        <input type="date" id="departureDate" name="departureDate" class="w-full p-2 border border-gray-300 rounded-md" value="{{ trip.start_date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <button type="submit" class="w-full py-2 bg-green-700 text-white font-semibold rounded-md">Search Flights</button>
+                    </div>
+                </form>
+            </section>
+
+            <div class="bg-white border border-gray-200 rounded-lg shadow-md p-6">
+                <h2 class="text-3xl font-semibold text-gray-700 mb-6">Trip Details</h2>
+
+                <p class="text-lg text-gray-600 mb-2"><strong>Start Date:</strong> {{ trip.start_date }}</p>
+                <p class="text-lg text-gray-600 mb-2"><strong>End Date:</strong> {{ trip.end_date }}</p>
+
+                <div class="mt-6">
+                    <h3 class="text-2xl font-semibold text-gray-700 mb-3">Additional Information</h3>
+                    <p class="text-gray-600 mt-2">You can add any extra details about the trip here, such as planned activities, notes, or travel tips.</p>
+                    <!-- Example of additional details -->
+                    <ul class="list-disc pl-6 mt-2">
+                        <li>Flight details: Example flight info</li>
+                        <li>Accommodation: Example hotel details</li>
+                        <li>Activities: Example activity or event</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Displaying images from Unsplash -->
+            {% if images %}
+                <div class="mt-6">
+                    <h3 class="text-2xl font-semibold text-gray-700">Destination Images</h3>
+                    <div class="flex space-x-4 overflow-x-auto mt-4">
+                        {% for image in images %}
+                            <img src="{{ image.urls.regular }}" alt="{{ image.alt_description }}" class="w-64 h-40 object-cover rounded-lg shadow-md">
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <p>No images found for this destination.</p>
+            {% endif %}
+
+            <div class="mt-6">
+                <a href="/profile/" class="text-green-700 hover:text-green-800">Back to Profile</a>
             </div>
         </div>
-        
-        <div class="mt-6">
-            <a href="/profile/" class="text-green-700 hover:text-green-800">Back to Profile</a>
+
+        <!-- Sidebar for Map -->
+<div class="w-1/3 ml-6">
+    <!-- Map Heading -->
+    <h3 class="text-2xl font-semibold text-gray-700 mb-4">Trip Destination Map</h3>
+    
+    <!-- Map Container -->
+    <div id="map" style="height: 400px; width: 100%;" class="rounded-lg shadow-md border border-gray-200"></div>
+
+    <!-- Weather Section (Moved Below Map) -->
+    <div id="weatherSection" class="mt-6">
+        <h3 class="text-2xl font-semibold text-gray-700">Today's Weather</h3>
+        <div id="currentWeather" class="bg-white border border-gray-200 rounded-lg shadow-md p-6 mt-4">
+            {% if weather_info %}
+                <p><strong>Temperature:</strong> {{ weather_info.temperature }}°C</p>
+                <p><strong>Weather:</strong> {{ weather_info.description }}</p>
+                <p><strong>Humidity:</strong> {{ weather_info.humidity }}%</p>
+                <p><strong>Pressure:</strong> {{ weather_info.pressure }} hPa</p>
+                <p><strong>Wind Speed:</strong> {{ weather_info.wind_speed }} m/s</p>
+            {% else %}
+                <p>Weather data is unavailable.</p>
+            {% endif %} 
         </div>
+
+        <!-- Button to View Weather for Trip Days -->
+        <button id="viewWeatherBtn" class="mt-6 w-full py-2 bg-blue-700 text-white font-semibold rounded-md hover:bg-blue-800 focus:outline-none">
+            Travel Date Info
+        </button>
+
+        <!-- Trip Weather -->
+        <div id="tripWeather" class="hidden mt-6 bg-white p-6 rounded-lg shadow-md">
+            <h4 class="text-lg font-semibold text-gray-700 mb-4">Weather for Your Trip</h4>
+            <div id="tripWeatherDetails">
+                {% for day in trip_weather %}
+                <div class="mt-4">
+                    <p><strong>Date:</strong> {{ day.date }}</p>
+                    <p><strong>Weather:</strong> {{ day.description }}</p>
+                    <p><strong>Temperature:</strong> {{ day.temperature }}°C</p>
+                </div>
+                {% empty %}
+                <p>No weather data available for the trip days.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+               
     </main>
+    
 
     <!-- Footer Section -->
     <footer class="py-8 bg-white text-center border-t border-gray-200">
         <p class="text-gray-600">&copy; 2025 PLAN&TOUR. All rights reserved.</p>
     </footer>
+
+    <!-- Map Initialization Script -->
+    <script>
+        var latitude = parseFloat("{{ trip.latitude|default:0 }}");
+        var longitude = parseFloat("{{ trip.longitude|default:0 }}");
+
+        if (latitude !== 0 && longitude !== 0) {
+            var map = L.map('map').setView([latitude, longitude], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            var marker = L.marker([latitude, longitude]).addTo(map);
+            marker.bindPopup("<b>{{ trip.destination }}</b><br>Your trip destination.").openPopup();
+        } else {
+            console.log("Invalid latitude or longitude");
+        }
+
+        // Toggle the flight search form visibility
+        document.getElementById('searchFlightBtn').addEventListener('click', function() {
+            document.getElementById('flightSearchForm').classList.toggle('hidden');
+        });
+
+        // Toggle the hotel search form visibility
+        document.getElementById('searchHotelBtn').addEventListener('click', function() {
+            document.getElementById('hotelSearchForm').classList.toggle('hidden');
+        });
+
+       // Toggle the trip weather section visibility
+        document.getElementById('viewWeatherBtn').addEventListener('click', function() {
+            var tripWeatherSection = document.getElementById('tripWeather');
+            if (tripWeatherSection.classList.contains('hidden')) {
+                tripWeatherSection.classList.remove('hidden');
+            } else {
+                tripWeatherSection.classList.add('hidden');
+            }
+         });
+ 
+    </script>
 
 </body>
 </html>
