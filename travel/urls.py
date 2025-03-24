@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from .views import booking_view, get_city_suggestions
 from travel.views import delete_trip
+from travel.views import fetch_hotels
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -21,8 +22,13 @@ urlpatterns = [
     path('booking/', views.booking_view, name='booking'),
     path('itinerary/', views.itinerary, name='itinerary'),
     path('get-cities/', get_city_suggestions, name='get_city_suggestions'),
-    path('hotel-search/', views.hotel_search, name='hotel_search'),
-    path('flight-info/', views.flight_info, name='flight_info'),
-    path('get-hotels/', views.get_hotels, name='get_hotels'),
+    path('hotel-search/', views.get_hotels, name='hotel_search'), 
     path('search-flights/', views.search_flights_page, name='search_flights_page'),
+    path('flight-booking/', views.flight_booking, name='flight_booking'),
+    path('payment/', views.payment_view, name='payment'),
+    path('payment/process/', views.payment_process, name='payment_process'),
+    path('fetch_hotels/', fetch_hotels, name='fetch_hotels'),
+    path('book_hotel/<int:hotel_id>/', views.book_hotel, name='book_hotel'),
+    path('create-checkout-session/', views.create_checkout_session, name='create_checkout_session'),
+    path('success/', views.success, name='success'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

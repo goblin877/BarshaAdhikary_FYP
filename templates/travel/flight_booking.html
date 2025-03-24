@@ -1,0 +1,101 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Search</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Header Section -->
+    <header class="flex justify-between items-center px-8 py-6 bg-white shadow-md">
+        <div class="flex items-center">
+            <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-16 h-auto">
+            <span class="ml-4 text-2xl font-bold text-green-700">PLAN&TOUR</span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <input type="text" placeholder="Search..." class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500">
+        </div>
+        <nav class="flex space-x-6">
+            <a href="{% url 'home' %}" class="text-gray-700 hover:text-green-700">Home</a>
+            <a href="{% url 'guide' %}" class="text-gray-700 hover:text-green-700">Travel Guide</a>
+            <a href="{% url 'about' %}" class="text-gray-700 hover:text-green-700">About</a>
+            <a href="{% url 'contact' %}" class="text-gray-700 hover:text-green-700">Contact</a>
+        </nav>
+        
+        <div class="flex items-center space-x-4">
+            {% if user.is_authenticated %}
+                <span class="text-gray-700">Welcome, {{ user.username }}!</span>
+                <a href="{% url 'profile' %}" class="text-green-700 border border-green-700 px-4 py-2 rounded">👤</a>
+                <form action="{% url 'logout' %}" method="POST" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="text-white bg-green-700 px-4 py-2 rounded">LogOut</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="text-white bg-green-700 px-4 py-2 rounded">LogIn</a>
+                <a href="{% url 'signup' %}" class="text-green-700 border border-green-700 px-4 py-2 rounded">SignUp</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Flight Search Results Section -->
+    <section class="container mx-auto py-8 px-4">
+        <!-- Display selected flight details if available -->
+        {% if request.session.selected_flight %}
+            <div class="selected-flight mb-8 bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-2xl font-bold text-gray-800">Selected Flight Details</h3>
+                <p><strong>Airline:</strong> {{ request.session.selected_flight.airline }}</p>
+                <p><strong>Flight Number:</strong> {{ request.session.selected_flight.flightNumber }}</p>
+                <p><strong>Departure Time:</strong> {{ request.session.selected_flight.departureTime }}</p>
+                <p><strong>Arrival Time:</strong> {{ request.session.selected_flight.arrivalTime }}</p>
+                <p><strong>Price:</strong> ${{ request.session.selected_flight.price }}</p>
+                <p><strong>Route:</strong> {{ request.session.selected_flight.departureCity }} → {{ request.session.selected_flight.arrivalCity }}</p>
+            </div>
+        {% endif %}
+        
+            <tbody>
+                {% for flight in flights %}
+                    <tr class="border-b border-gray-200">
+                        <td class="py-2 px-4">{{ flight.airline }}</td>
+                        <td class="py-2 px-4">{{ flight.flightNumber }}</td>
+                        <td class="py-2 px-4">{{ flight.departureTime }}</td>
+                        <td class="py-2 px-4">{{ flight.arrivalTime }}</td>
+                        <td class="py-2 px-4">${{ flight.price }}</td>
+                        <td class="py-2 px-4">{{ flight.departureCity }} → {{ flight.arrivalCity }}</td>
+                        <td class="py-2 px-4">
+                            <form action="{% url 'flight_booking' %}" method="POST">
+                                {% csrf_token %}
+                                <input type="hidden" name="airline" value="{{ flight.airline }}">
+                                <input type="hidden" name="flightNumber" value="{{ flight.flightNumber }}">
+                                <input type="hidden" name="departureTime" value="{{ flight.departureTime }}">
+                                <input type="hidden" name="arrivalTime" value="{{ flight.arrivalTime }}">
+                                <input type="hidden" name="price" value="{{ flight.price }}">
+                                <input type="hidden" name="departureCity" value="{{ flight.departureCity }}">
+                                <input type="hidden" name="arrivalCity" value="{{ flight.arrivalCity }}">
+                                <button type="submit" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 transition">Book Now</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Proceed to Payment Button -->
+        {% if request.session.selected_flight %}
+            <div class="mt-6 text-center">
+                <a href="{% url 'payment' %}">
+                    <button class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">Proceed to Payment</button>
+                </a>
+            </div>
+        {% endif %}
+    </section>
+
+    <!-- Footer Section -->
+    <footer class="py-8 bg-white text-center border-t border-gray-200">
+        <p class="text-gray-600">&copy; 2025 PLAN&TOUR. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>

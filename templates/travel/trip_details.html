@@ -1,5 +1,4 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -51,12 +50,54 @@
             <!-- Trip Title -->
             <h1 class="text-5xl font-extrabold text-gray-800 mb-6 text-center">{{ trip.destination }}</h1>
 
-            <!-- Booking Button -->
-            <div class="flex justify-end mb-4">
-                <a href="{% url 'booking' %}">
-                    <button class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">Booking</button>
-                </a>
+            <!-- Redirect Buttons for Hotel and Flight Search -->
+            <div class="flex justify-center mb-4 space-x-4">
+                <button id="searchHotelBtn" class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">Search Hotels</button>
+                <button id="searchFlightBtn" class="bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-800 transition">Search Flights</button>
             </div>
+
+            <!-- Hotel Search Form (Hidden initially) -->
+            <section id="hotelSearchForm" class="max-w-lg mx-auto mt-8 bg-white p-6 rounded-md shadow-md hidden">
+                <form action="{% url 'fetch_hotels' %}" method="GET">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="city" class="block text-gray-700">City</label>
+                        <input type="text" id="city" name="city" class="w-full p-2 border border-gray-300 rounded-md" value="{{ trip.destination }}" required readonly>
+                    </div>
+                    <div class="mb-4">
+                        <label for="check_in_date" class="block text-gray-700">Check-in Date</label>
+                        <input type="date" id="check_in_date" name="check_in_date" class="w-full p-2 border border-gray-300 rounded-md" value="{{ trip.start_date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="check_out_date" class="block text-gray-700">Check-out Date</label>
+                        <input type="date" id="check_out_date" name="check_out_date" class="w-full p-2 border border-gray-300 rounded-md" value="{{ trip.end_date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <button type="submit" class="w-full py-2 bg-green-700 text-white font-semibold rounded-md">Search Hotels</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="flightSearchForm" class="max-w-lg mx-auto mt-8 bg-white p-6 rounded-md shadow-md hidden">
+                <form action="{% url 'search_flights_page' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="departureCity" class="block text-gray-700">Departure City</label>
+                        <input type="text" id="departureCity" name="departureCity" class="w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="arrivalCity" class="block text-gray-700">Arrival City</label>
+                        <input type="text" id="arrivalCity" name="arrivalCity" class="w-full p-2 border border-gray-300 rounded-md" value="{{ trip.destination }}" readonly>
+                    </div>
+                    <div class="mb-4">
+                        <label for="departureDate" class="block text-gray-700">Departure Date</label>
+                        <input type="date" id="departureDate" name="departureDate" class="w-full p-2 border border-gray-300 rounded-md" value="{{ trip.start_date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <button type="submit" class="w-full py-2 bg-green-700 text-white font-semibold rounded-md">Search Flights</button>
+                    </div>
+                </form>
+            </section>
 
             <div class="bg-white border border-gray-200 rounded-lg shadow-md p-6">
                 <h2 class="text-3xl font-semibold text-gray-700 mb-6">Trip Details</h2>
@@ -96,25 +137,53 @@
         </div>
 
         <!-- Sidebar for Map -->
-        <div class="w-1/3 ml-6">
-            <div id="map" style="height: 400px; width: 100%;"></div>
-            
-            <!-- Weather Information below the Map -->
-            <div id="weather-info" class="bg-white p-4 mt-6 rounded-lg shadow-md">
-                <h3 class="text-2xl font-semibold text-gray-700">Today's Weather Information</h3>
-                <div id="weather-details" class="text-gray-600 mt-2">
-                    {% if weather_info %}
-                        <p><strong>Temperature:</strong> {{ weather_info.temperature }}°C</p>
-                        <p><strong>Weather:</strong> {{ weather_info.description }}</p>
-                        <p><strong>Humidity:</strong> {{ weather_info.humidity }}%</p>
-                        <p><strong>Wind Speed:</strong> {{ weather_info.wind_speed }} m/s</p>
-                    {% else %}
-                        <p>Unable to fetch weather data.</p>
-                    {% endif %}
+<div class="w-1/3 ml-6">
+    <!-- Map Heading -->
+    <h3 class="text-2xl font-semibold text-gray-700 mb-4">Trip Destination Map</h3>
+    
+    <!-- Map Container -->
+    <div id="map" style="height: 400px; width: 100%;" class="rounded-lg shadow-md border border-gray-200"></div>
+
+    <!-- Weather Section (Moved Below Map) -->
+    <div id="weatherSection" class="mt-6">
+        <h3 class="text-2xl font-semibold text-gray-700">Today's Weather</h3>
+        <div id="currentWeather" class="bg-white border border-gray-200 rounded-lg shadow-md p-6 mt-4">
+            {% if weather_info %}
+                <p><strong>Temperature:</strong> {{ weather_info.temperature }}°C</p>
+                <p><strong>Weather:</strong> {{ weather_info.description }}</p>
+                <p><strong>Humidity:</strong> {{ weather_info.humidity }}%</p>
+                <p><strong>Pressure:</strong> {{ weather_info.pressure }} hPa</p>
+                <p><strong>Wind Speed:</strong> {{ weather_info.wind_speed }} m/s</p>
+            {% else %}
+                <p>Weather data is unavailable.</p>
+            {% endif %} 
+        </div>
+
+        <!-- Button to View Weather for Trip Days -->
+        <button id="viewWeatherBtn" class="mt-6 w-full py-2 bg-blue-700 text-white font-semibold rounded-md hover:bg-blue-800 focus:outline-none">
+            Travel Date Info
+        </button>
+
+        <!-- Trip Weather -->
+        <div id="tripWeather" class="hidden mt-6 bg-white p-6 rounded-lg shadow-md">
+            <h4 class="text-lg font-semibold text-gray-700 mb-4">Weather for Your Trip</h4>
+            <div id="tripWeatherDetails">
+                {% for day in trip_weather %}
+                <div class="mt-4">
+                    <p><strong>Date:</strong> {{ day.date }}</p>
+                    <p><strong>Weather:</strong> {{ day.description }}</p>
+                    <p><strong>Temperature:</strong> {{ day.temperature }}°C</p>
                 </div>
+                {% empty %}
+                <p>No weather data available for the trip days.</p>
+                {% endfor %}
             </div>
         </div>
+    </div>
+</div>
+               
     </main>
+    
 
     <!-- Footer Section -->
     <footer class="py-8 bg-white text-center border-t border-gray-200">
@@ -127,20 +196,38 @@
         var longitude = parseFloat("{{ trip.longitude|default:0 }}");
 
         if (latitude !== 0 && longitude !== 0) {
-            // Initialize the map with dynamic coordinates
             var map = L.map('map').setView([latitude, longitude], 13);
 
-            // Add OpenStreetMap tile layer
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            // Add a marker for the destination
             var marker = L.marker([latitude, longitude]).addTo(map);
             marker.bindPopup("<b>{{ trip.destination }}</b><br>Your trip destination.").openPopup();
         } else {
             console.log("Invalid latitude or longitude");
         }
+
+        // Toggle the flight search form visibility
+        document.getElementById('searchFlightBtn').addEventListener('click', function() {
+            document.getElementById('flightSearchForm').classList.toggle('hidden');
+        });
+
+        // Toggle the hotel search form visibility
+        document.getElementById('searchHotelBtn').addEventListener('click', function() {
+            document.getElementById('hotelSearchForm').classList.toggle('hidden');
+        });
+
+       // Toggle the trip weather section visibility
+        document.getElementById('viewWeatherBtn').addEventListener('click', function() {
+            var tripWeatherSection = document.getElementById('tripWeather');
+            if (tripWeatherSection.classList.contains('hidden')) {
+                tripWeatherSection.classList.remove('hidden');
+            } else {
+                tripWeatherSection.classList.add('hidden');
+            }
+         });
+ 
     </script>
 
 </body>

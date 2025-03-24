@@ -1,0 +1,67 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Header Section -->
+    <header class="flex justify-between items-center px-8 py-6 bg-white shadow-md">
+        <div class="flex items-center">
+            <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-16 h-auto">
+            <span class="ml-4 text-2xl font-bold text-green-700">PLAN&TOUR</span>
+        </div>
+    </header>
+
+    <!-- Payment Section -->
+    <section class="max-w-4xl mx-auto my-8 p-6 bg-white rounded-lg shadow-md">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6">Payment for Flight Booking</h2>
+
+        <!-- Display Selected Flight Details -->
+        <div class="mb-6">
+            <h3 class="text-2xl font-semibold text-gray-800">Flight Details</h3>
+            <p><strong>Airline:</strong> {{ request.session.selected_flight.airline }}</p>
+            <p><strong>Flight Number:</strong> {{ request.session.selected_flight.flightNumber }}</p>
+            <p><strong>Departure Time:</strong> {{ request.session.selected_flight.departureTime }}</p>
+            <p><strong>Arrival Time:</strong> {{ request.session.selected_flight.arrivalTime }}</p>
+            <p><strong>Price:</strong> ${{ request.session.selected_flight.price }}</p>
+            <p><strong>Route:</strong> {{ request.session.selected_flight.departureCity }} → {{ request.session.selected_flight.arrivalCity }}</p>
+        </div>
+
+        <!-- Payment Form -->
+        <form action="{% url 'payment_process' %}" method="POST">
+            {% csrf_token %}
+            
+            <!-- Credit Card Information -->
+            <div class="mb-4">
+                <label for="cardNumber" class="block text-gray-700">Card Number</label>
+                <input type="text" name="cardNumber" id="cardNumber" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2" placeholder="XXXX XXXX XXXX XXXX" required>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="expiryDate" class="block text-gray-700">Expiry Date</label>
+                    <input type="month" name="expiryDate" id="expiryDate" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2" required>
+                </div>
+                <div>
+                    <label for="cvv" class="block text-gray-700">CVV</label>
+                    <input type="text" name="cvv" id="cvv" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2" placeholder="XXX" required>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">Complete Payment</button>
+        </form>
+    </section>
+
+    <!-- Footer Section -->
+    <footer class="py-8 bg-white text-center border-t border-gray-200">
+        <p class="text-gray-600">&copy; 2025 PLAN&TOUR. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>

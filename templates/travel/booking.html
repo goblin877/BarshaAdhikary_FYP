@@ -7,17 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book for your Trip</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <style>
-        .tab-active {
-            border-bottom: 3px solid #48bb78; /* Green underline */
-            color: #48bb78; /* Green text color */
-        }
-
-        .tab-inactive {
-            border-bottom: 3px solid transparent; /* No underline when inactive */
-            color: #4a5568; /* Gray text color */
-        }
-    </style>
 </head>
 
 <body class="bg-gray-50 min-h-screen">
@@ -50,54 +39,21 @@
 
     <!-- Plan Trip Section -->
     <div class="max-w-6xl mx-auto mt-12 bg-white p-12 rounded-lg shadow-xl flex flex-col md:flex-row">
-        <!-- Left Side: Images -->
         <div class="w-full md:w-1/2 flex justify-center items-center">
             <div id="image-container">
-                <img src="{% static 'main/images/Hotel.jpg' %}" alt="Hotel" id="hotel-image" class="rounded-lg shadow-lg w-full object-cover">
-                <img src="{% static 'main/images/Flight.jpg' %}" alt="Flight" id="flight-image" class="rounded-lg shadow-lg w-full object-cover hidden">
+                <img src="{% static 'main/images/Hotel.jpg' %}" alt="Hotel" class="rounded-lg shadow-lg w-full object-cover">
+                <img src="{% static 'main/images/Flight.jpg' %}" alt="Flight" class="rounded-lg shadow-lg w-full object-cover hidden">
             </div>
         </div>
 
-        <!-- Right Side: Form -->
-        <div class="w-full md:w-1/2 p-8">
-            <h2 class="text-4xl font-bold text-green-700 mb-6 text-center">Book for your Trip</h2>
+        <!-- Right Side: Buttons -->
+        <div class="w-full md:w-1/2 p-8 text-center">
+            <h2 class="text-4xl font-bold text-green-700 mb-6">Book for your Trip</h2>
 
-            {% if messages %}
-            <div class="bg-green-200 p-4 rounded-md mb-4">
-                {% for message in messages %}
-                <p class="text-lg text-green-800 font-semibold">{{ message }}</p>
-                {% endfor %}
+            <div class="flex justify-center space-x-6 mb-6">
+                <a href="{% url 'hotel_search' %}" class="bg-green-700 text-white px-8 py-3 rounded-lg text-lg hover:bg-green-800 transition-all">Search Hotels</a>
+                <a href="{% url 'search_flights_page' %}" class="bg-blue-700 text-white px-8 py-3 rounded-lg text-lg hover:bg-blue-800 transition-all">Search Flights</a>
             </div>
-            {% endif %}
-
-            <div class="flex mb-6">
-                <button id="hotel-toggle" class="tab-active px-6 py-3 w-1/2 text-lg font-semibold rounded-lg transition-all ease-in-out duration-200">Hotel</button>
-                <button id="flight-toggle" class="tab-inactive px-6 py-3 w-1/2 text-lg font-semibold rounded-lg transition-all ease-in-out duration-200">Flights</button>
-            </div>
-
-            <!-- Hotel Form -->
-            <form id="search-form" method="POST" action="{% url 'get-hotels' %}">
-                {% csrf_token %}
-                <div id="hotel-form" class="space-y-4">
-                    <div>
-                        <label for="destination" class="text-sm text-gray-700 font-semibold">Destination</label>
-                        <input type="text" id="destination" name="destination" placeholder="Enter destination" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                    </div>
-                    <div class="flex space-x-4">
-                        <div class="w-1/2">
-                            <label for="check-in" class="text-sm text-gray-700 font-semibold">Check-in Date</label>
-                            <input type="date" id="check-in" name="check_in" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                        </div>
-                        <div class="w-1/2">
-                            <label for="check-out" class="text-sm text-gray-700 font-semibold">Check-out Date</label>
-                            <input type="date" id="check-out" name="check_out" class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <button type="submit" class="bg-green-700 text-white px-8 py-3 rounded-lg text-lg hover:bg-green-800 transition-all">Search Hotels</button>
-                    </div>
-                </div>
-            </form>
         </div>
     </div>
 </body>

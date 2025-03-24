@@ -200,6 +200,8 @@ def contact(request):
 # Trip details view
 import requests
 from django.shortcuts import get_object_or_404, render
+from datetime import timedelta
+
 from .models import Trip
 
 def trip_details(request, trip_id):
@@ -220,30 +222,46 @@ def trip_details(request, trip_id):
             trip.latitude = None
             trip.longitude = None
     
-    # Fetch weather data from OpenWeatherMap API if latitude and longitude are available
+    # Fetch today's weather data from OpenWeatherMap API
     weather_info = None
     if trip.latitude and trip.longitude:
         weather_api_key = "ac7dfa82b795fc910c53c9999e427fca"  # Replace with your actual API key
-        weather_url = f"http://api.openweathermap.org/data/2.5/weather?lat={trip.latitude}&lon={trip.longitude}&appid={weather_api_key}&units=metric"  # Add units=metric for temperature in Celsius
+        weather_url = f"http://api.openweathermap.org/data/2.5/weather?lat={trip.latitude}&lon={trip.longitude}&appid={weather_api_key}&units=metric"
         weather_response = requests.get(weather_url)
         
         if weather_response.status_code == 200:
             weather_data = weather_response.json()
-            # Extract detailed weather info
-            weather_description = weather_data.get("weather", [{}])[0].get("description", "No weather data available")
-            temperature = weather_data.get("main", {}).get("temp", "No temperature data available")
-            humidity = weather_data.get("main", {}).get("humidity", "No humidity data available")
-            pressure = weather_data.get("main", {}).get("pressure", "No pressure data available")
-            wind_speed = weather_data.get("wind", {}).get("speed", "No wind data available")
-
-            # Prepare the weather info to pass to the template
             weather_info = {
-                "description": weather_description,
-                "temperature": temperature,
-                "humidity": humidity,
-                "pressure": pressure,
-                "wind_speed": wind_speed
+                "description": weather_data.get("weather", [{}])[0].get("description", "No weather data available"),
+                "temperature": weather_data.get("main", {}).get("temp", "No temperature data available"),
+                "humidity": weather_data.get("main", {}).get("humidity", "No humidity data available"),
+                "pressure": weather_data.get("main", {}).get("pressure", "No pressure data available"),
+                "wind_speed": weather_data.get("wind", {}).get("speed", "No wind data available")
             }
+
+    # Fetch trip days' weather (based on trip start and end dates)
+    trip_weather = []
+    if trip.start_date and trip.end_date:
+        # Generate a list of dates between start and end date
+        date_range = [trip.start_date + timedelta(days=i) for i in range((trip.end_date - trip.start_date).days + 1)]
+        
+        for date in date_range:
+            weather_url_trip = f"http://api.openweathermap.org/data/2.5/forecast?lat={trip.latitude}&lon={trip.longitude}&appid={weather_api_key}&units=metric&cnt=8"  # cnt=8 gives weather for the day at every 3-hour interval
+            weather_response_trip = requests.get(weather_url_trip)
+            
+            if weather_response_trip.status_code == 200:
+                weather_data_trip = weather_response_trip.json()
+                # Filter weather data for the current date
+                for entry in weather_data_trip.get("list", []):
+                    # Check if the entry matches the date of the trip day
+                    weather_date = entry["dt_txt"].split(" ")[0]
+                    if weather_date == date.strftime("%Y-%m-%d"):
+                        trip_weather.append({
+                            "date": date,
+                            "description": entry["weather"][0]["description"],
+                            "temperature": entry["main"]["temp"],
+                        })
+                        break
 
     # Fetch images from Unsplash API
     unsplash_url = f"https://api.unsplash.com/search/photos?query={trip.destination}&client_id=a8F8irghpyAE0DS4Wp602aus2Pci7-I5UoTA_aJgSU8"
@@ -257,8 +275,10 @@ def trip_details(request, trip_id):
     return render(request, 'travel/trip_details.html', {
         'trip': trip,
         'images': images,
-        'weather_info': weather_info,  # Pass weather info to the template
+        'weather_info': weather_info,
+        'trip_weather': trip_weather,  # Pass weather info for trip days
     })
+
 
 # Booking view
 def booking_view(request):
@@ -309,173 +329,11 @@ def generate_signature(api_key, api_secret, url, method, body=""):
     
     return signature
 
-
-def hotel_search(request):
-    query = request.GET.get('query', 'Paris')  # Get the search query (default to 'Paris')
-    check_in_date = request.GET.get('check_in', '2025-03-11')  # Default check-in date
-    check_out_date = request.GET.get('check_out', '2025-03-18')  # Default check-out date
-
-    # Define the API URL and parameters
-    url = f'https://tripadvisor16.p.rapidapi.com/api/v1/hotels/searchHotels'
-    headers = {
-        'x-rapidapi-host': 'tripadvisor16.p.rapidapi.com',
-        'x-rapidapi-key': '013c0f53c1msh6647f1c15c03db0p1c0739jsncfa956be7c4d'  # Replace with your API key
-    }
-    params = {
-        'geoId': query,  # Destination name or geoId (e.g., Paris)
-        'checkIn': check_in_date,
-        'checkOut': check_out_date,
-        'pageNumber': 1,
-        'currencyCode': 'USD'
-    }
-
-    try:
-        # Make the API request
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()  # Check for any HTTP errors
-        hotels_data = response.json()
-        
-        # Extract hotel information from the API response
-        hotels = hotels_data.get('data', [])
-        
-    except requests.exceptions.RequestException as e:
-        # Handle any errors in the request
-        hotels = []
-        print(f"Error fetching data: {e}")
-
-    return render(request, 'travel/hotel_search.html', {
-        'hotels': hotels,
-        'query': query,
-        'check_in': check_in_date,
-        'check_out': check_out_date
-    })
-def flight_info(request):
-    if request.method == 'GET':
-        # You can add flight search parameters here similar to hotel search
-        flight_origin = request.GET.get('flight_origin')
-        flight_destination = request.GET.get('flight_destination')
-        flight_date = request.GET.get('flight_date')
-
-        # Call to your flight API or logic to fetch flight info goes here...
-
-    return render(request, 'travel/flight_info.html')  # Adjust this as needed
-
-import requests
-from django.shortcuts import render
-from django.http import JsonResponse
-
-# Store API credentials directly (Not recommended for production)
-CLIENT_ID = "mdWOlvVehsn6eJPLohv4f6gCAkgsX8Tb"
-CLIENT_SECRET = "YxzJh4uQu8Cahvcz"
-
-def get_amadeus_access_token():
-    """Fetch Amadeus API access token."""
-    url = "https://test.api.amadeus.com/v1/security/oauth2/token"
-    payload = {
-        "grant_type": "client_credentials",
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET
-    }
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    
-    response = requests.post(url, data=payload, headers=headers)
-    print("Token Response:", response.json())  # Debugging line
-    return response.json().get("access_token") if response.status_code == 200 else None
-
-from .models import HotelStaticInfo  # Import the static hotel information
-
-def get_hotels(request):
-    """Fetch hotels from Amadeus API based on the destination input and add static data."""
-    access_token = get_amadeus_access_token()
-    if not access_token:
-        return render(request, 'travel/hotel_search.html', {'error': 'Failed to obtain access token'})
-
-    destination = request.GET.get('query', '').strip()
-    if not destination:
-        return render(request, 'travel/hotel_search.html', {'error': 'Please enter a destination'})
-
-    # Fetch city data from Amadeus API
-    url = 'https://test.api.amadeus.com/v1/reference-data/locations/cities'
-    headers = {'Authorization': f'Bearer {access_token}'}
-    params = {'keyword': destination, 'max': 1}
-
-    city_response = requests.get(url, headers=headers, params=params)
-
-    if city_response.status_code == 200 and city_response.json().get('data'):
-        city_code = city_response.json()['data'][0]['iataCode']
-    else:
-        return render(request, 'travel/hotel_search.html', {'error': 'Invalid destination'})
-
-    # Fetch hotel data from Amadeus API
-    hotel_url = 'https://test.api.amadeus.com/v1/reference-data/locations/hotels/by-city'
-    hotel_params = {
-        'cityCode': city_code,
-        'radius': 5,
-        'radiusUnit': 'KM',
-        'hotelSource': 'ALL'
-    }
-
-    hotel_response = requests.get(hotel_url, headers=headers, params=hotel_params)
-
-    if hotel_response.status_code == 200:
-        hotels = hotel_response.json().get('data', [])[:5]  # Limit to first 5 hotels
-        hotel_data = []
-
-        # Fetch static data from the database (HotelStaticInfo)
-        static_info_list = HotelStaticInfo.objects.all()[:5]  # Fetch the first 5 static info entries
-
-        # Iterate over the hotels and static data
-        for i, hotel in enumerate(hotels):
-            address = hotel.get('address', {})
-            address_line = address.get('lines', [None])[0] if address.get('lines') else None
-            city_name = address.get('cityName', None)
-            country = address.get('countryCode', None)
-
-            # Set the address to a default string only if data is missing
-            full_address = f"{address_line}, {city_name}, {country}" if address_line or city_name or country else "Address not available"
-
-            # Check if there's corresponding static info for this hotel
-            if i < len(static_info_list):
-                static_info = static_info_list[i]
-                image_url = static_info.image.url if static_info.image else None
-                price = static_info.price
-                rating = static_info.rating
-                hotel_slot = dict(HotelStaticInfo.SLOT_CHOICES).get(static_info.hotel_slot, 'No Slot Info')  # Get slot display text
-            else:
-                image_url = None
-                price = None
-                rating = None
-                hotel_slot = 'No Slot Info'
-
-            hotel_data.append({
-                'name': hotel['name'],
-                'address': full_address,
-                'city': city_name or 'Unknown City',  # Default to 'Unknown City' if not available
-                'country': country or 'Unknown Country',  # Default to 'Unknown Country' if not available
-                'image': hotel['media'][0]['uri'] if hotel.get('media') else image_url,  # Image from Amadeus API or local fallback
-                'price': price,
-                'rating': rating,  # Rating fetched from the static info model
-                'hotel_slot': hotel_slot  # Adding the hotel slot info to display
-            })
-
-        return render(request, 'travel/hotel_search.html', {
-            'hotels': hotel_data,
-            'query': destination
-        })
-
-    return render(request, 'travel/hotel_search.html', {
-        'error': 'Failed to fetch hotel data',
-        'query': destination
-    })
-
-def hotel_search(request):
-    return render(request, 'travel/hotel_search.html')
-
 from django.shortcuts import render
 import requests
 
 def get_amadeus_access_token():
-    """Fetch Amadeus API access token."""
+    # Fetch Amadeus API access token.
     CLIENT_IDFLI = "IHUlkMee73a2QKKTp3YPXABhF6dRpKoj"
     CLIENT_SECRETFLI = "S0y9AbAxmM7q2kcL"
 
@@ -495,8 +353,23 @@ def get_amadeus_access_token():
         print("Error fetching access token:", response.json())
         return None
 
+def get_location_code(city_name, access_token):
+    # Use Amadeus API to get location data (airport codes) based on city names
+    location_url = f"https://test.api.amadeus.com/v1/reference-data/locations"
+    headers = {'Authorization': f'Bearer {access_token}'}
+    params = {'keyword': city_name, 'subType': 'CITY'}
+
+    response = requests.get(location_url, headers=headers, params=params)
+
+    if response.status_code == 200:
+        location_data = response.json().get('data', [])
+        if location_data:
+            # Return the first match's IATA code (airport code)
+            return location_data[0].get('iataCode')
+    return None
+
 def search_flights_page(request):
-    """Handle flight search form and display results on the same page."""
+    # Handle flight search form and display results on the same page.
     flights = None
     error = None
     
@@ -506,42 +379,232 @@ def search_flights_page(request):
             error = "Failed to get access token"
         else:
             # Get user inputs from the search form
-            origin = request.POST.get('departureCity', 'LON')
-            destination = request.POST.get('arrivalCity', 'NYC')
+            origin_city = request.POST.get('departureCity', 'London')
+            destination_city = request.POST.get('arrivalCity', 'New York')
             departure_date = request.POST.get('departureDate', '2025-04-10')
-            adults = request.POST.get('adults', 1)
 
-            # Amadeus API request
-            flight_url = "https://test.api.amadeus.com/v2/shopping/flight-offers"
-            headers = {'Authorization': f'Bearer {access_token}'}
-            params = {
-                'originLocationCode': origin,
-                'destinationLocationCode': destination,
-                'departureDate': departure_date,
-                'adults': adults
-            }
+            # Get location codes for both origin and destination city names
+            origin = get_location_code(origin_city, access_token)
+            destination = get_location_code(destination_city, access_token)
 
-            response = requests.get(flight_url, headers=headers, params=params)
-
-            if response.status_code == 200:
-                flight_data = response.json().get("data", [])
-                filtered_flights = []
-                for flight in flight_data:
-                    itineraries = flight.get("itineraries", [])
-                    if itineraries:
-                        first_leg = itineraries[0].get("segments", [])[0]  # First segment
-                        flight_details = {
-                            "airline": first_leg.get("carrierCode"),
-                            "flightNumber": first_leg.get("number"),
-                            "departureTime": first_leg.get("departure", {}).get("at"),
-                            "arrivalTime": first_leg.get("arrival", {}).get("at"),
-                            "price": flight.get("price", {}).get("total", "N/A")
-                        }
-                        filtered_flights.append(flight_details)
-                
-                # Limit the number of flights to 8-10
-                flights = filtered_flights[:10]  # This will limit the results to 10 flights
+            if not origin or not destination:
+                error = "Unable to resolve city names to airport codes"
             else:
-                error = "Failed to fetch flight data"
+                # Amadeus API request to get flights
+                flight_url = "https://test.api.amadeus.com/v2/shopping/flight-offers"
+                headers = {'Authorization': f'Bearer {access_token}'}
+                params = {
+                    'originLocationCode': origin,
+                    'destinationLocationCode': destination,
+                    'departureDate': departure_date,
+                    'adults': 1  # Fixed to 1 as passengers field is removed
+                }
+
+                response = requests.get(flight_url, headers=headers, params=params)
+
+                if response.status_code == 200:
+                    flight_data = response.json().get("data", [])
+                    filtered_flights = []
+                    for flight in flight_data:
+                        itineraries = flight.get("itineraries", [])
+                        if itineraries:
+                            first_leg = itineraries[0].get("segments", [])[0]  # First segment
+                            flight_details = {
+                                "airline": first_leg.get("carrierCode"),
+                                "flightNumber": first_leg.get("number"),
+                                "departureTime": first_leg.get("departure", {}).get("at"),
+                                "arrivalTime": first_leg.get("arrival", {}).get("at"),
+                                "price": flight.get("price", {}).get("total", "N/A"),
+                                "departureCity": origin_city,  # Using user input
+                                "arrivalCity": destination_city  # Using user input
+                            }
+                            filtered_flights.append(flight_details)
+
+                    # Limit the number of flights to 8-10
+                    flights = filtered_flights[:10]
+                else:
+                    error = "Failed to fetch flight data"
 
     return render(request, 'travel/flight_search.html', {'flights': flights, 'error': error})
+
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+
+def flight_booking(request):
+    if request.method == 'POST':
+        flight = {
+            'airline': request.POST['airline'],
+            'flightNumber': request.POST['flightNumber'],
+            'departureTime': request.POST['departureTime'],
+            'arrivalTime': request.POST['arrivalTime'],
+            'price': request.POST['price'],
+            'departureCity': request.POST['departureCity'],
+            'arrivalCity': request.POST['arrivalCity'],
+        }
+
+        # Store the flight details in the session
+        request.session['selected_flight'] = flight
+
+        # Redirect to the flight_search page to display the selected flight
+        return redirect('flight_booking')
+
+
+    return render(request, 'travel/flight_booking.html')
+from django.shortcuts import render
+
+def payment_view(request):
+    # Your payment logic here
+    return render(request, 'travel/payment.html')
+
+def payment_process(request):
+    if request.method == "POST":
+        # Example: Get the payment form data
+        card_number = request.POST.get('cardNumber')
+        expiry_date = request.POST.get('expiryDate')
+        cvv = request.POST.get('cvv')
+
+        # Add logic to process the payment (e.g., payment gateway integration)
+
+        # Redirect to a success page (or handle error as needed)
+        return redirect('payment_success')  # Ensure you have a 'payment_success' view
+
+    # If method is not POST, you could redirect back to the payment page or handle it otherwise
+    return redirect('payment')  # Assuming you want to redirect back to the payment page
+
+from django.shortcuts import render
+def hotel_booking(request):
+    return render(request, 'travel/hotel_booking.html')  # Render the hotel_booking.html template
+
+import requests
+from django.shortcuts import render
+
+def get_hotels(request):
+    """Fetch hotels from SerpAPI based on the destination input."""
+    destination = request.GET.get('query', '').strip()
+    
+    if not destination:
+        return render(request, 'travel/hotel_search.html', {'error': 'Please enter a destination'})
+
+    # SerpAPI endpoint and API key
+    API_KEY = "7ba5ac77812e54a4d20e05560195047deffa3494fd7b259bffa8d01bdce4e088"  # Replace with your actual SerpAPI key
+    url = f"https://serpapi.com/search?q=hotels+in+{destination}&location={destination}&api_key={API_KEY}"
+
+    # Fetch hotel data from SerpAPI
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        # Extract hotel data from the JSON response
+        data = response.json()
+        
+        # If there are hotels in the response
+        if 'hotels' in data:
+            hotels = data['hotels']
+        else:
+            return render(request, 'travel/hotel_search.html', {'error': 'No hotels found for this destination'})
+        
+    else:
+        return render(request, 'travel/hotel_search.html', {'error': 'Failed to fetch hotel data'})
+
+    # Process the hotel data
+    hotel_data = []
+    for hotel in hotels:
+        hotel_data.append({
+            'name': hotel.get('name', 'N/A'),
+            'address': hotel.get('address', 'No Address Available'),
+            'price': hotel.get('price', 'N/A'),
+            'rating': hotel.get('rating', 'N/A'),
+            'image': hotel.get('image', 'https://via.placeholder.com/300'),
+        })
+
+    return render(request, 'travel/hotel_search.html', {'hotels': hotel_data, 'query': destination})
+
+
+from django.shortcuts import render
+import requests
+
+def fetch_hotels(request):
+    # Get user input from query parameters
+    city = request.GET.get("city", "Pokhara")  # Default to 'Pokhara' if not provided
+    check_in_date = request.GET.get("check_in_date", "2025-04-01")  # Default check-in date
+    check_out_date = request.GET.get("check_out_date", "2025-04-05")  # Default check-out date
+    
+    params = {
+        "engine": "google_hotels",
+        "q": f"hotels in {city}",
+        "check_in_date": check_in_date,
+        "check_out_date": check_out_date,
+        "currency": "USD",
+        "api_key": "7ba5ac77812e54a4d20e05560195047deffa3494fd7b259bffa8d01bdce4e088",  # Replace with your actual API key
+    }
+
+    response = requests.get("https://serpapi.com/search", params=params)
+
+    if response.status_code == 200:
+        data = response.json()
+
+        formatted_hotels = []
+        for idx, hotel in enumerate(data.get("properties", [])):  # Use index to create unique 'id'
+            formatted_hotels.append({
+                "id": idx,  # Add a unique 'id' based on the index
+                "name": hotel.get("name"),
+                "description": hotel.get("description"),
+                "link": hotel.get("link"),
+                "rate_per_night": hotel.get("rate_per_night", {}).get("lowest"),
+                "hotel_class": hotel.get("hotel_class"),
+                "overall_rating": hotel.get("overall_rating"),
+                "reviews": hotel.get("reviews"),
+                "images": [image.get("original_image") for image in hotel.get("images", [])]
+            })
+
+        return render(request, "travel/hotel_booking.html", {"hotels": formatted_hotels})
+
+    else:
+        return JsonResponse({"error": "Failed to fetch hotels", "details": response.text}, status=response.status_code)
+
+import stripe
+from django.http import JsonResponse
+from django.shortcuts import render
+
+# Define your API keys directly in views.py (Not recommended for production)
+STRIPE_PUBLIC_KEY = "pk_test_51R6BtY02ZhWfahdvnPETt1gzaUiJf3yW3N7hioxaYvW7xVIQUvgO3p2wRAxgLMnXSwKsCXb1uLF9nXVdhuqmprMN00vxQvPQ1I"
+STRIPE_SECRET_KEY = "sk_test_51R6BtY02ZhWfahdvq63bGLYgvE0qx0TN6X75aElMc8T0zMew6jaIFpSuDwuWA6PBEM1gbFasZQ6wJA3GesSRm5lf00PQuprbml"
+
+stripe.api_key = STRIPE_SECRET_KEY  # Set the secret key for API calls
+
+def book_hotel(request, hotel_id=None):  
+    hotel = {
+        'name': request.GET.get('name', 'Unknown Hotel'),
+        'hotel_class': request.GET.get('class', 'N/A'),
+        'overall_rating': request.GET.get('rating', 'N/A'),
+        'description': request.GET.get('description', 'No description available.'),
+        'rate_per_night': request.GET.get('price', 'N/A'),
+        'reviews': request.GET.get('reviews', 'N/A'),
+        'link': request.GET.get('link', '#'),
+        'image': request.GET.get('image', ''),
+    }
+    return render(request, 'travel/book_hotel.html', {'hotel': hotel, 'STRIPE_PUBLIC_KEY': STRIPE_PUBLIC_KEY})
+
+def create_checkout_session(request):
+    print("Creating checkout session...")  # Log when the session creation is called
+
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=[{
+            'price_data': {
+                'currency': 'usd',
+                'product_data': {'name': 'Booking Payment'},
+                'unit_amount': 1000,  # Amount in cents ($10)
+            },
+            'quantity': 1,
+        }],
+        mode='payment',
+        success_url="http://127.0.0.1:8000/success/",
+        cancel_url="http://127.0.0.1:8000/cancel/",
+    )
+
+    print(f"Session ID: {session.id}")  # Log the session ID for verification
+    return JsonResponse({'sessionId': session.id})
+
+
+def success(request):
+    return render(request, 'travel/success.html')
