@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required
+from datetime import datetime
 from django.contrib import messages
 from .forms import CustomUserCreationForm, TripForm, ProfileForm
-from .models import TravelGuide, UserProfile, Trip
+from .models import UserProfile, Trip
 from django.core.mail import send_mail
 from django.conf import settings
 from .forms import ContactForm
@@ -33,18 +34,27 @@ UNSPLASH_ACCESS_KEY = "a8F8irghpyAE0DS4Wp602aus2Pci7-I5UoTA_aJgSU8"
 API_KEY = '4cd60a8ccc51377e38c59a30439dabec'
 API_SECRET = '8e4622e2e3'
 
-# Homepage view
 def home(request):
+    # Initialize context for unauthenticated users
+    context = {'is_authenticated': request.user.is_authenticated}
+
     if request.user.is_authenticated:
-        context = {
-            'is_authenticated': True,
+        # Fetch the upcoming trips for the user, ordered by start date
+        upcoming_trips = Trip.objects.filter(user=request.user, start_date__gte=datetime.now()).order_by('start_date')[:2]
+        context.update({
             'username': request.user.username,
-        }
+            'upcoming_trips': upcoming_trips,
+        })
+
+    # Fetch all reviews to be displayed on the homepage, ordered by most recent
+    reviews = Review.objects.all().order_by('-created_at')[:4]  # Fetch the 4 most recent reviews
+    context['reviews'] = reviews
+
+    # Determine which template to render
+    if request.user.is_authenticated:
+        return render(request, 'travel/home.html', context)  # Show personalized homepage
     else:
-        context = {
-            'is_authenticated': False,
-        }
-    return render(request, 'travel/home.html', context)
+        return render(request, 'travel/landing_page.html', context)  # Show landing page for unauthenticated users
 
 # Login view
 def login_view(request):
@@ -94,9 +104,11 @@ def logout_view(request):
 @login_required
 def profile(request):
     user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
-    user_trips = Trip.objects.filter(user=request.user)  # Fetch user's trips
+    user_trips = Trip.objects.filter(user=request.user).order_by('start_date')  # Order by start_date ascending
 
     return render(request, 'travel/profile.html', {"user_profile": user_profile, "user_trips": user_trips})
+
+
 @login_required
 def edit_profile(request):
     # Get or create the UserProfile instance for the logged-in user
@@ -146,7 +158,7 @@ def plan_trip(request):
         
     return render(request, 'travel/plan_trip.html')
 # Profile view
-@login_required
+"""@login_required
 def profile_view(request):
     # Fetch trips for the logged-in user
     trips = Trip.objects.filter(user=request.user)
@@ -157,17 +169,23 @@ def profile_view(request):
     return render(request, 'travel/profile.html', {
         'trips': trips,  # Passing saved trips to the template
         'user_profile': user_profile  # Passing edited profile data (including profile picture)
-    })
+    })"""
 # Guide view
-def guide_view(request):
-    if request.method == 'POST':
-        title = request.POST['title']
-        description = request.POST['description']
-        TravelGuide.objects.create(title=title, description=description)
-        return redirect('guide')
+from .models import Review
+from .forms import ReviewForm
+def guide_view(request):   
+    reviews = Review.objects.all().order_by('-created_at')  # Fetch all reviews
+    form = ReviewForm()
 
-    guides = TravelGuide.objects.all()
-    return render(request, 'travel/guide.html', {'guides': guides})
+    if request.method == 'POST':
+        form = ReviewForm(request.POST, request.FILES)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.user = request.user  # Assign the logged-in user
+            review.save()
+            return redirect('guide')  # Redirect to refresh the page
+
+    return render(request, 'travel/guide.html', {'form': form, 'reviews': reviews})
 
 # About view
 def about(request):
@@ -608,3 +626,74 @@ def create_checkout_session(request):
 
 def success(request):
     return render(request, 'travel/success.html')
+
+# your_app/views.py
+from django.shortcuts import render
+from .forms import QuestionForm
+from .models import Question
+
+def display_questions(request):
+    # Fetch all active questions
+    questions = Question.objects.filter(is_active=True).order_by('order')
+    form_list = []
+    
+    if request.method == 'POST':
+        # Process form submission here
+        for question in questions:
+            response = request.POST.get(f'question_{question.id}')
+            # Save response logic (e.g., store it in the database)
+            # For example, you can create a Response model and save the data
+            # Response.objects.create(question=question, answer=response)
+        
+    # Create the form list for rendering
+    for question in questions:
+        form_list.append(QuestionForm(instance=question))
+    
+    return render(request, 'travel/questions.html', {'form_list': form_list})
+
+from django.shortcuts import render
+from django.http import JsonResponse
+import openai
+
+# Your OpenAI API key (DO NOT EXPOSE API KEYS IN CODE)
+openai.api_key = "your_api_key_here"
+
+def generate_itinerary(request):
+    if request.method == "POST":
+        # Collect user responses from the POST request
+        city = request.POST.get("question_1")
+        num_days = request.POST.get("question_2")
+        age_group = request.POST.get("question_3")
+        food_pref = request.POST.get("question_4")
+        activity_type = request.POST.get("question_5")
+        travel_group = request.POST.get("question_6")
+        places = request.POST.get("question_7")
+
+        # Create a prompt for the AI model
+        user_prompt = (
+            f"Generate a detailed {num_days}-day travel itinerary for {city}. "
+            f"The traveler is in the {age_group} age group and is traveling with {travel_group}. "
+            f"They prefer {food_pref} cuisine and enjoy {activity_type} activities. "
+            f"They like visiting {places}. Provide a structured day-wise itinerary."
+        )
+
+        try:
+            # Use openai.ChatCompletion instead of the deprecated openai.Completion
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful travel itinerary assistant."},
+                    {"role": "user", "content": user_prompt},
+                ],
+                max_tokens=500,
+                temperature=0.7,
+            )
+
+            itinerary = response["choices"][0]["message"]["content"]
+
+            return render(request, "travel/itinerary_result.html", {"itinerary": itinerary})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return render(request, "travel/questions.html")  # Render the questionnaire again if not POST

@@ -2,7 +2,8 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import Trip, UserProfile
-
+from .models import Question
+from .models import Review
 # Custom user creation form
 class CustomUserCreationForm(UserCreationForm):
     class Meta:
@@ -39,3 +40,23 @@ class ProfileForm(forms.ModelForm):
             # You can add any validation for the image file (e.g., file size, format, etc.)
             pass
         return profile_picture
+    
+class QuestionForm(forms.ModelForm):
+    class Meta:
+        model = Question
+        fields = ['text', 'options']  # Include the fields you want to display (e.g., text and options)
+
+    # This function will help you render the options as choices for multiple-choice questions
+    def __init__(self, *args, **kwargs):
+        super(QuestionForm, self).__init__(*args, **kwargs)
+        if self.instance.question_type in ['age_group', 'travel_companion', 'food_preference', 'activity_type', 'place_type']:
+            self.fields['options'].widget = forms.Select(choices=[(option, option) for option in self.instance.options])  
+
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ['title', 'review_text', 'rating', 'image']
+        widgets = {
+            'rating': forms.Select(choices=[(i, i) for i in range(1, 6)])
+        }             

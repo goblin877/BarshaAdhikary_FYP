@@ -31,4 +31,6 @@ urlpatterns = [
     path('book_hotel/<int:hotel_id>/', views.book_hotel, name='book_hotel'),
     path('create-checkout-session/', views.create_checkout_session, name='create_checkout_session'),
     path('success/', views.success, name='success'),
+    path('questions/', views.display_questions, name='display_questions'),
+    path('generate-itinerary/', views.generate_itinerary, name='generate_itinerary'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
