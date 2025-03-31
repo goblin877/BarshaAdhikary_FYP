@@ -32,29 +32,12 @@
             <p><strong>Route:</strong> {{ request.session.selected_flight.departureCity }} → {{ request.session.selected_flight.arrivalCity }}</p>
         </div>
 
-        <!-- Payment Form -->
-        <form action="{% url 'payment_process' %}" method="POST">
+        <!-- Stripe Payment Button -->
+        <form action="{% url 'stripe_checkout' %}" method="POST">
             {% csrf_token %}
-            
-            <!-- Credit Card Information -->
-            <div class="mb-4">
-                <label for="cardNumber" class="block text-gray-700">Card Number</label>
-                <input type="text" name="cardNumber" id="cardNumber" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2" placeholder="XXXX XXXX XXXX XXXX" required>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label for="expiryDate" class="block text-gray-700">Expiry Date</label>
-                    <input type="month" name="expiryDate" id="expiryDate" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2" required>
-                </div>
-                <div>
-                    <label for="cvv" class="block text-gray-700">CVV</label>
-                    <input type="text" name="cvv" id="cvv" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2" placeholder="XXX" required>
-                </div>
-            </div>
-
-            <!-- Submit Button -->
-            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">Complete Payment</button>
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition">
+                Proceed to Payment
+            </button>
         </form>
     </section>
 

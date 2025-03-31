@@ -24,13 +24,18 @@ class UserProfile(models.Model):
     def __str__(self):
         return self.user.username
 
-# Model for Travel Guides (Optional, if you want to include travel guides)
-class TravelGuide(models.Model):
-    title = models.CharField(max_length=200)
-    description = models.TextField()
+
+class Review(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    review_text = models.TextField()
+    rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])  # 1 to 5 stars
+    image = models.ImageField(upload_to='review_images/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
+
 
 class TripPlan(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -71,3 +76,35 @@ class HotelStaticInfo(models.Model):
 
     def __str__(self):
         return f"Static Info for {self.get_slot_title()} - {'Available' if self.availability else 'Not Available'}"
+
+class Question(models.Model):
+    # The question text to ask the user
+    text = models.CharField(max_length=255)
+
+    # The category or type of question (this helps to group questions logically)
+    QUESTION_TYPE_CHOICES = [
+        ('city', 'City'),
+        ('days', 'Number of Days'),
+        ('age_group', 'Age Group'),
+        ('travel_companion', 'Travel Companion'),
+        ('food_preference', 'Food Preference'),
+        ('activity_type', 'Activity Preference'),
+        ('place_type', 'Type of Places'),
+        ('additional_notes', 'Additional Notes'),
+    ]
+    question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES)
+
+    # If the question has predefined options, you can store them here (for multiple choice questions)
+    options = models.JSONField(null=True, blank=True)  # Store options as a JSON array, e.g., ["Under 18", "18-30", "30-60", "Above 60"]
+
+    # Whether the question allows open-ended answers
+    is_open_ended = models.BooleanField(default=False)  # True if open-ended, False for predefined options
+
+    # The order in which the question should appear (this controls the flow of questions)
+    order = models.PositiveIntegerField(default=0)
+
+    # This field indicates if the question is currently active or not
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.text
