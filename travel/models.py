@@ -114,3 +114,14 @@ class Response(models.Model):
 
     def __str__(self):
         return f"Response to '{self.question.text}'"
+# models.py
+from django.db import models
+
+class Itinerary(models.Model):
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True, blank=True)
+    content = models.TextField()
+    approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Itinerary for {self.user.username if self.user else 'Guest'}"
