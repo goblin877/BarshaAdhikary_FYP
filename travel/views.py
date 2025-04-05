@@ -627,29 +627,40 @@ def create_checkout_session(request):
 def success(request):
     return render(request, 'travel/success.html')
 
-# your_app/views.py
-from django.shortcuts import render
-from .forms import QuestionForm
-from .models import Question
+from django.shortcuts import render, redirect
+from .models import Question, Response
 
 def display_questions(request):
-    # Fetch all active questions
-    questions = Question.objects.filter(is_active=True).order_by('order')
-    form_list = []
-    
+    questions = list(Question.objects.filter(is_active=True).order_by('order'))
+    total_questions = len(questions)
+
+    # Initialize index
+    if 'current_question_index' not in request.session:
+        request.session['current_question_index'] = 0
+
+    current_index = request.session['current_question_index']
+
+    # Check if questionnaire is completed
+    if current_index >= total_questions:
+        request.session.pop('current_question_index', None)
+        return render(request, 'travel/thank_you.html')
+
+    current_question = questions[current_index]
+
     if request.method == 'POST':
-        # Process form submission here
-        for question in questions:
-            response = request.POST.get(f'question_{question.id}')
-            # Save response logic (e.g., store it in the database)
-            # For example, you can create a Response model and save the data
-            # Response.objects.create(question=question, answer=response)
-        
-    # Create the form list for rendering
-    for question in questions:
-        form_list.append(QuestionForm(instance=question))
-    
-    return render(request, 'travel/questions.html', {'form_list': form_list})
+        response_value = request.POST.get('answer')
+        if response_value:
+            # Save response
+            Response.objects.create(
+                question=current_question,
+                answer=response_value,
+                session_key=request.session.session_key or 'anonymous'
+            )
+            # Go to next question
+            request.session['current_question_index'] = current_index + 1
+            return redirect('display_questions')
+
+    return render(request, 'travel/questions.html', {'question': current_question})
 
 from django.shortcuts import render
 from django.http import JsonResponse
