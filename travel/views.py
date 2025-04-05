@@ -101,12 +101,26 @@ def logout_view(request):
     return redirect('login')
 
 # Profile view
+from django.contrib.auth.decorators import login_required
+from .models import UserProfile, Trip, Itinerary
+
 @login_required
 def profile(request):
+    # Fetch or create user profile
     user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
-    user_trips = Trip.objects.filter(user=request.user).order_by('start_date')  # Order by start_date ascending
 
-    return render(request, 'travel/profile.html', {"user_profile": user_profile, "user_trips": user_trips})
+    # Fetch user trips ordered by start_date
+    user_trips = Trip.objects.filter(user=request.user).order_by('start_date')
+
+    # Fetch user itineraries
+    itineraries = Itinerary.objects.filter(user=request.user)
+
+    # Pass the user profile, trips, and itineraries to the template
+    return render(request, 'travel/profile.html', {
+        'user_profile': user_profile,
+        'user_trips': user_trips,
+        'itineraries': itineraries  # Adding itineraries
+    })
 
 
 @login_required
@@ -628,7 +642,8 @@ def success(request):
     return render(request, 'travel/success.html')
 
 from django.shortcuts import render, redirect
-from .models import Question, Response
+from .models import Question, Response, Itinerary
+from .utils import generate_itinerary  # Your utility function for Hugging Face API
 
 def display_questions(request):
     questions = list(Question.objects.filter(is_active=True).order_by('order'))
@@ -643,7 +658,22 @@ def display_questions(request):
     # Check if questionnaire is completed
     if current_index >= total_questions:
         request.session.pop('current_question_index', None)
-        return render(request, 'travel/thank_you.html')
+
+        # Collect all responses
+        responses = Response.objects.filter(session_key=request.session.session_key or 'anonymous')
+
+        # Prepare prompt for LLM
+        prompt = ""
+        for response in responses:
+            prompt += f"{response.question.text}: {response.answer}\n"
+
+        # Send the prompt to the LLM API
+        itinerary_text = generate_itinerary(prompt)
+
+        # Show the generated itinerary
+        return render(request, 'travel/itinerary_result.html', {
+            'itinerary_text': itinerary_text
+        })
 
     current_question = questions[current_index]
 
@@ -662,49 +692,17 @@ def display_questions(request):
 
     return render(request, 'travel/questions.html', {'question': current_question})
 
-from django.shortcuts import render
-from django.http import JsonResponse
-import openai
-
-# Your OpenAI API key (DO NOT EXPOSE API KEYS IN CODE)
-openai.api_key = "your_api_key_here"
-
-def generate_itinerary(request):
-    if request.method == "POST":
-        # Collect user responses from the POST request
-        city = request.POST.get("question_1")
-        num_days = request.POST.get("question_2")
-        age_group = request.POST.get("question_3")
-        food_pref = request.POST.get("question_4")
-        activity_type = request.POST.get("question_5")
-        travel_group = request.POST.get("question_6")
-        places = request.POST.get("question_7")
-
-        # Create a prompt for the AI model
-        user_prompt = (
-            f"Generate a detailed {num_days}-day travel itinerary for {city}. "
-            f"The traveler is in the {age_group} age group and is traveling with {travel_group}. "
-            f"They prefer {food_pref} cuisine and enjoy {activity_type} activities. "
-            f"They like visiting {places}. Provide a structured day-wise itinerary."
-        )
-
-        try:
-            # Use openai.ChatCompletion instead of the deprecated openai.Completion
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful travel itinerary assistant."},
-                    {"role": "user", "content": user_prompt},
-                ],
-                max_tokens=500,
-                temperature=0.7,
+def itinerary_approval(request, itinerary_text):
+    if request.method == 'POST':
+        if 'approve' in request.POST:
+            # Save the itinerary in the database
+            itinerary = Itinerary.objects.create(
+                user=request.user,
+                content=itinerary_text,
+                approved=True
             )
+            return redirect('profile')  # Redirect to the user's profile
 
-            itinerary = response["choices"][0]["message"]["content"]
-
-            return render(request, "travel/itinerary_result.html", {"itinerary": itinerary})
-
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
-
-    return render(request, "travel/questions.html")  # Render the questionnaire again if not POST
+    return render(request, 'travel/itinerary_approval.html', {
+        'itinerary_text': itinerary_text
+    })

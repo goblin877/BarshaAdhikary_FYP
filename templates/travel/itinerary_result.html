@@ -3,37 +3,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Personalized Itinerary</title>
+    <title>Your Travel Itinerary</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-50 min-h-screen">
-
-    <!-- Header Section -->
-    <header class="flex justify-between items-center px-8 py-6 bg-white shadow-md">
-        <div class="flex items-center">
-            <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-16 h-auto">
-            <span class="ml-4 text-2xl font-bold text-green-700">PLAN&TOUR</span>
-        </div>
-    </header>
-
-    <!-- Itinerary Result -->
-    <div class="max-w-3xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
-        <h1 class="text-3xl font-semibold text-center text-gray-800 mb-6">Your Personalized Itinerary</h1>
-        
-        <div class="bg-gray-100 p-6 rounded-lg">
-            <p class="text-lg text-gray-800">{{ itinerary }}</p>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-2xl mx-auto bg-white shadow-lg rounded-xl h-[80vh] overflow-hidden flex flex-col">
+        <!-- Itinerary Content -->
+        <div class="bg-green-600 text-white px-6 py-4 text-xl font-semibold">
+            Your Generated Itinerary
         </div>
 
-        <div class="text-center mt-6">
-            <a href="{% url 'questions' %}" class="text-blue-600 hover:underline">Back to Questionnaire</a>
+        <div class="flex-1 p-6 overflow-y-auto space-y-6">
+            <div class="bg-gray-100 p-4 rounded-lg">
+                <p>{{ itinerary_text }}</p>
+            </div>
+        </div>
+
+        <!-- Approval Section -->
+        <div class="p-4 text-center">
+            <form method="POST">
+                {% csrf_token %}
+                <button type="submit" name="approve" class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition duration-200">
+                    Yes, I'm Satisfied!
+                </button>
+            </form>
         </div>
     </div>
-
-    <!-- Footer Section -->
-    <footer class="py-8 bg-white text-center border-t border-gray-200 mt-8">
-        <p class="text-gray-600">&copy; 2025 PLAN&TOUR. All rights reserved.</p>
-    </footer>
-
 </body>
 </html>
