@@ -78,10 +78,8 @@ class HotelStaticInfo(models.Model):
         return f"Static Info for {self.get_slot_title()} - {'Available' if self.availability else 'Not Available'}"
 
 class Question(models.Model):
-    # The question text to ask the user
     text = models.CharField(max_length=255)
 
-    # The category or type of question (this helps to group questions logically)
     QUESTION_TYPE_CHOICES = [
         ('city', 'City'),
         ('days', 'Number of Days'),
@@ -91,20 +89,28 @@ class Question(models.Model):
         ('activity_type', 'Activity Preference'),
         ('place_type', 'Type of Places'),
         ('additional_notes', 'Additional Notes'),
+        ('budget', 'Budget'),
     ]
     question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES)
 
-    # If the question has predefined options, you can store them here (for multiple choice questions)
-    options = models.JSONField(null=True, blank=True)  # Store options as a JSON array, e.g., ["Under 18", "18-30", "30-60", "Above 60"]
-
-    # Whether the question allows open-ended answers
-    is_open_ended = models.BooleanField(default=False)  # True if open-ended, False for predefined options
-
-    # The order in which the question should appear (this controls the flow of questions)
+    options = models.JSONField(null=True, blank=True)  # For multiple choice buttons
+    is_open_ended = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
-
-    # This field indicates if the question is currently active or not
     is_active = models.BooleanField(default=True)
+
+    # Optional enhancements
+    placeholder = models.CharField(max_length=255, null=True, blank=True)
+    depends_on = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
+    required_answer = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return self.text
+
+class Response(models.Model):
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    answer = models.TextField()
+    session_key = models.CharField(max_length=40, null=True, blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Response to '{self.question.text}'"
