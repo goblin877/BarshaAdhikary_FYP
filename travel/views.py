@@ -47,7 +47,7 @@ def home(request):
         })
 
     # Fetch all reviews to be displayed on the homepage, ordered by most recent
-    reviews = Review.objects.all().order_by('-created_at')[:4]  # Fetch the 4 most recent reviews
+    reviews = Review.objects.all().order_by('-created_at')[:8]  # Fetch the 4 most recent reviews
     context['reviews'] = reviews
 
     # Determine which template to render
@@ -641,9 +641,9 @@ def create_checkout_session(request):
 def success(request):
     return render(request, 'travel/success.html')
 
-from django.shortcuts import render, redirect
+"""from django.shortcuts import render, redirect
 from .models import Question, Response, Itinerary
-from .utils import generate_itinerary  # Your utility function for Hugging Face API
+from .utils import generate_itinerary_with_cohere  # Updated utility function
 
 def display_questions(request):
     questions = list(Question.objects.filter(is_active=True).order_by('order'))
@@ -662,13 +662,13 @@ def display_questions(request):
         # Collect all responses
         responses = Response.objects.filter(session_key=request.session.session_key or 'anonymous')
 
-        # Prepare prompt for LLM
+        # Prepare prompt for Cohere
         prompt = ""
         for response in responses:
             prompt += f"{response.question.text}: {response.answer}\n"
 
-        # Send the prompt to the LLM API
-        itinerary_text = generate_itinerary(prompt)
+        # Send the prompt to Cohere to generate the itinerary
+        itinerary_text = generate_itinerary_with_cohere(prompt)
 
         # Show the generated itinerary
         return render(request, 'travel/itinerary_result.html', {
@@ -690,7 +690,7 @@ def display_questions(request):
             request.session['current_question_index'] = current_index + 1
             return redirect('display_questions')
 
-    return render(request, 'travel/questions.html', {'question': current_question})
+    return render(request, 'travel/questions.html', {'question': current_question})"""
 
 def itinerary_approval(request, itinerary_text):
     if request.method == 'POST':
@@ -706,3 +706,62 @@ def itinerary_approval(request, itinerary_text):
     return render(request, 'travel/itinerary_approval.html', {
         'itinerary_text': itinerary_text
     })
+from django.shortcuts import render, redirect
+from .utils import generate_itinerary_with_cohere
+
+def create_itinerary(request):
+    if request.method == 'POST':
+        destination = request.POST.get('destination', '').strip()
+        days = request.POST.get('days', '').strip()
+        budget = request.POST.get('budget', '').strip()
+        notes = request.POST.get('notes', '').strip()
+        place_type = request.POST.get('place_type', '').strip()
+        travel_group = request.POST.get('travel_group', '').strip()
+        age_group = request.POST.get('age_group', '').strip()
+
+        # Construct prompt with all details
+        prompt = f"""
+        Create a detailed travel itinerary for a {days}-day trip to {destination}.
+
+        Details:
+        - Budget range: {budget}
+        - Type of places to visit: {place_type}
+        - Traveling with: {travel_group}
+        - Age group: {age_group}
+        - Additional preferences: {notes}
+
+        For each day, include:
+        - **Day 1:** (activities, places to visit, meals, etc.)
+        - **Day 2:** (activities, places to visit, meals, etc.)
+        - **Day 3:** (activities, places to visit, meals, etc.)
+        (keep the days concise and practical)
+
+        Ensure that for each day you include an **estimated cost** in USD, e.g., "Estimated cost: $120 per person".
+
+        At the end of the itinerary, provide a **total estimated budget** for the entire trip.
+
+        Make the plan **short, practical, and clear**, with each day's plan and budget listed in a similar format:
+        - **Day 1**: [activities, meals, etc.] *Estimated cost: $100*
+        - **Day 2**: [activities, meals, etc.] *Estimated cost: $120*
+
+        Also, use bold for each day's heading: **Day 1**, **Day 2**, etc., to make it clear and easy to follow.
+        """
+
+        # Send the prompt to Cohere to generate the itinerary
+        itinerary = generate_itinerary_with_cohere(prompt)
+
+        # Print the itinerary in the console for debugging
+        print("Generated Itinerary:", itinerary)
+
+        # Save the itinerary in session
+        request.session['generated_itinerary'] = itinerary
+
+        # Redirect to the itinerary display page
+        return redirect('show_itinerary')  # URL name for itinerary_display view
+
+    return render(request, 'travel/travel_form.html')
+
+def show_itinerary(request):
+    # Retrieve the generated itinerary from the session
+    itinerary = request.session.get('generated_itinerary', '')
+    return render(request, 'travel/itinerary_display.html', {'itinerary': itinerary})
