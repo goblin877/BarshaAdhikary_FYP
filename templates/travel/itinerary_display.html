@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itinerary - Plan&Tour</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+    <!-- Header -->
+    <header class="flex justify-between items-center px-8 py-6 bg-white shadow">
+        <div class="flex items-center">
+            <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-14 h-auto">
+            <span class="ml-4 text-2xl font-bold text-green-700">PLAN&TOUR</span>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="max-w-4xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Your Generated Itinerary</h2>
+
+        <div class="text-gray-700 whitespace-pre-wrap leading-relaxed border border-gray-200 rounded-lg p-4 bg-gray-50">
+            {{ itinerary }}
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-end mt-8 space-x-4">
+            <button class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg transition">
+                Save Itinerary
+            </button>
+            <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition">
+                Share Itinerary
+            </button>
+        </div>
+    </main>
+
+</body>
+</html>

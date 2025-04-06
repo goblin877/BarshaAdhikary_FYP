@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot Itinerary Planner</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let questions = [
+                { type: "text", name: "destination", placeholder: "Which city are you traveling to?" },
+                { type: "number", name: "days", placeholder: "How many days will you stay?" },
+                { type: "select", name: "budget", placeholder: "What is your budget range?", options: ["Low", "Medium", "High"] },
+                { type: "select", name: "place_type", placeholder: "What kind of places would you like to visit?", options: ["Historical", "Natural", "Adventure", "Spiritual", "Mixed"] },
+                { type: "select", name: "travel_group", placeholder: "Who are you traveling with?", options: ["Alone", "Friends", "Family"] },
+                { type: "select", name: "age_group", placeholder: "Your Age Group?", options: ["Under 18", "18-30", "31-50", "50+"] },
+                { type: "text", name: "notes", placeholder: "Any additional preferences?" }
+            ];
+
+            let chatContainer = document.getElementById("chat-container");
+            let formData = {};
+            let questionIndex = 0;
+
+            function addBotMessage(message) {
+                let msg = document.createElement("div");
+                msg.className = "bot-message bg-gray-200 p-3 rounded-lg mb-2";
+                msg.innerText = message;
+                chatContainer.appendChild(msg);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            function addUserMessage(message) {
+                let msg = document.createElement("div");
+                msg.className = "user-message bg-green-500 text-white p-3 rounded-lg mb-2 self-end";
+                msg.innerText = message;
+                chatContainer.appendChild(msg);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            function showNextQuestion() {
+                if (questionIndex < questions.length) {
+                    let currentQ = questions[questionIndex];
+
+                    addBotMessage(currentQ.placeholder);
+
+                    let inputContainer = document.createElement("div");
+                    inputContainer.className = "flex items-center space-x-2 mt-2";
+
+                    let inputField;
+                    if (currentQ.type === "select") {
+                        inputField = document.createElement("select");
+                        inputField.className = "p-2 border rounded-lg w-full";
+                        currentQ.options.forEach(option => {
+                            let opt = document.createElement("option");
+                            opt.value = option;
+                            opt.textContent = option;
+                            inputField.appendChild(opt);
+                        });
+                    } else {
+                        inputField = document.createElement("input");
+                        inputField.type = currentQ.type;
+                        inputField.className = "p-2 border rounded-lg w-full";
+                        inputField.placeholder = currentQ.placeholder;
+                    }
+
+                    inputField.name = currentQ.name;
+
+                    let sendButton = document.createElement("button");
+                    sendButton.className = "py-2 px-4 bg-blue-500 text-white rounded-lg";
+                    sendButton.innerText = "Send";
+
+                    sendButton.onclick = function () {
+                        let value = inputField.value.trim();
+                        if (value) {
+                            formData[currentQ.name] = value;
+                            addUserMessage(value);
+                            inputContainer.remove();
+                            questionIndex++;
+                            showNextQuestion();
+                        }
+                    };
+
+                    inputContainer.appendChild(inputField);
+                    inputContainer.appendChild(sendButton);
+                    chatContainer.appendChild(inputContainer);
+                } else {
+                    addBotMessage("All details collected! Click 'Generate Itinerary' to proceed.");
+
+                    let form = document.createElement("form");
+                    form.method = "POST";
+                    form.innerHTML = `{% csrf_token %}`; // CSRF token for Django security
+                    
+                    for (let key in formData) {
+                        let input = document.createElement("input");
+                        input.type = "hidden";
+                        input.name = key;
+                        input.value = formData[key];
+                        form.appendChild(input);
+                    }
+
+                    let submitButton = document.createElement("button");
+                    submitButton.type = "submit";
+                    submitButton.className = "w-full py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200 mt-3";
+                    submitButton.innerText = "Generate Itinerary ✈️";
+
+                    form.appendChild(submitButton);
+                    chatContainer.appendChild(form);
+                }
+            }
+
+            showNextQuestion();
+        });
+    </script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-xl mx-auto bg-white shadow-lg rounded-xl p-6">
+        <h1 class="text-2xl font-semibold mb-4 text-center text-green-700">Chatbot Travel Planner 🤖</h1>
+        <div id="chat-container" class="flex flex-col space-y-2"></div>
+    </div>
+</body>
+</html>
