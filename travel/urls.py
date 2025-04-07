@@ -22,7 +22,6 @@ urlpatterns = [
     path('booking/', views.booking_view, name='booking'),
     path('itinerary/', views.itinerary, name='itinerary'),
     path('get-cities/', get_city_suggestions, name='get_city_suggestions'),
-    path('hotel-search/', views.get_hotels, name='hotel_search'), 
     path('search-flights/', views.search_flights_page, name='search_flights_page'),
     path('flight-booking/', views.flight_booking, name='flight_booking'),
     path('payment/', views.payment_view, name='payment'),

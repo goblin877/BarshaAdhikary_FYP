@@ -21,7 +21,6 @@ from datetime import date
 from .models import TripPlan
 from django.utils import timezone
 import requests
-from .models import Hotel
 import requests
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -507,11 +506,11 @@ from django.shortcuts import render
 def hotel_booking(request):
     return render(request, 'travel/hotel_booking.html')  # Render the hotel_booking.html template
 
-import requests
+"""import requests
 from django.shortcuts import render
 
 def get_hotels(request):
-    """Fetch hotels from SerpAPI based on the destination input."""
+    """"""
     destination = request.GET.get('query', '').strip()
     
     if not destination:
@@ -548,7 +547,7 @@ def get_hotels(request):
             'image': hotel.get('image', 'https://via.placeholder.com/300'),
         })
 
-    return render(request, 'travel/hotel_search.html', {'hotels': hotel_data, 'query': destination})
+    return render(request, 'travel/hotel_search.html', {'hotels': hotel_data, 'query': destination})"""
 
 
 from django.shortcuts import render
