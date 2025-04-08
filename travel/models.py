@@ -95,3 +95,23 @@ class Itinerary(models.Model):
     def __str__(self):
         return f"Itinerary for {self.user.username if self.user else 'Guest'}"
 
+from django.db import models
+from django.contrib.auth.models import User
+
+class HotelBooking(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="hotel_bookings")
+    hotel_name = models.CharField(max_length=255)
+    hotel_class = models.CharField(max_length=50, blank=True, null=True)
+    overall_rating = models.DecimalField(max_digits=3, decimal_places=1, null=True, blank=True)
+    description = models.TextField(blank=True, null=True)
+    rate_per_night = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    reviews = models.TextField(blank=True, null=True)
+    hotel_link = models.URLField(max_length=500, blank=True, null=True)
+    image_url = models.URLField(max_length=500, blank=True, null=True)
+    
+    def __str__(self):
+        return self.hotel_name
+
+    class Meta:
+        verbose_name = "Hotel Booking"
+        verbose_name_plural = "Hotel Bookings"
