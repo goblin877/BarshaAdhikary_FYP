@@ -20,9 +20,7 @@
 
         <!-- Hotel Images -->
         <div class="grid grid-cols-2 gap-4 mt-4">
-            {% for image in hotel.images %}
-                <img src="{{ image }}" alt="{{ hotel.name }}" class="rounded-lg shadow-md">
-            {% endfor %}
+            <img src="{{ hotel.image }}" alt="{{ hotel.name }}" class="rounded-lg shadow-md">
         </div>
 
         <!-- More Details Link -->
@@ -31,9 +29,23 @@
         <!-- Booking Form -->
         <div class="mt-6 bg-white p-6 shadow-md rounded-lg">
             <h2 class="text-xl font-semibold text-gray-800">Proceed to Payment</h2>
-            <button id="checkout-button" class="mt-4 px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800">
-                Proceed to Payment
-            </button>
+            <form id="hotel-booking-form" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="name" value="{{ hotel.name }}">
+                <input type="hidden" name="class" value="{{ hotel.hotel_class }}">
+                <input type="hidden" name="rating" value="{{ hotel.overall_rating }}">
+                <input type="hidden" name="description" value="{{ hotel.description }}">
+                <input type="hidden" name="reviews" value="{{ hotel.reviews }}">
+                <input type="hidden" name="link" value="{{ hotel.link }}">
+                <input type="hidden" name="image" value="{{ hotel.image }}">
+
+                <!-- Ensure the price is passed and not empty -->
+                <input type="hidden" name="price" value="{{ hotel.rate_per_night|floatformat:2|default:0.00 }}">
+
+                <button type="submit" id="checkout-button" class="mt-4 px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800">
+                    Proceed to Payment
+                </button>
+            </form>
         </div>
     </div>
 
@@ -42,13 +54,35 @@
         var stripe = Stripe("{{ STRIPE_PUBLIC_KEY }}");  // Stripe public key
         var checkoutButton = document.getElementById("checkout-button");
 
-        checkoutButton.addEventListener("click", function () {
-            fetch("/create-checkout-session/")
-                .then(response => response.json())
-                .then(session => {
-                    return stripe.redirectToCheckout({ sessionId: session.sessionId });
-                })
-                .catch(error => console.error("Error:", error));
+        checkoutButton.addEventListener("click", function (e) {
+            e.preventDefault();  // Prevent the default form submission
+
+            var form = document.getElementById("hotel-booking-form");
+            var formData = new FormData(form);
+
+            // Log the form data being sent
+            console.log("Form data being sent:", Object.fromEntries(formData));
+
+            // Send POST request to create a checkout session
+            fetch("/create-checkout-session/", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(session => {
+                if (session.sessionId) {
+                    // Redirect to Stripe Checkout to handle card payment info
+                    stripe.redirectToCheckout({ sessionId: session.sessionId })
+                        .then(function (result) {
+                            if (result.error) {
+                                alert(result.error.message);
+                            }
+                        });
+                } else {
+                    alert("Error: " + session.error);
+                }
+            })
+            .catch(error => console.error("Error:", error));
         });
     </script>
 

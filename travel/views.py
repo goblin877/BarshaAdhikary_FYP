@@ -592,17 +592,21 @@ def fetch_hotels(request):
     else:
         return JsonResponse({"error": "Failed to fetch hotels", "details": response.text}, status=response.status_code)
 
-import stripe
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
-from django.shortcuts import render
+import stripe
+from django.contrib.auth.decorators import login_required
+from .models import HotelBooking  # Import the model
 
-# Define your API keys directly in views.py (Not recommended for production)
+# Stripe keys (not recommended to store in the code for production)
 STRIPE_PUBLIC_KEY = "pk_test_51R6BtY02ZhWfahdvnPETt1gzaUiJf3yW3N7hioxaYvW7xVIQUvgO3p2wRAxgLMnXSwKsCXb1uLF9nXVdhuqmprMN00vxQvPQ1I"
 STRIPE_SECRET_KEY = "sk_test_51R6BtY02ZhWfahdvq63bGLYgvE0qx0TN6X75aElMc8T0zMew6jaIFpSuDwuWA6PBEM1gbFasZQ6wJA3GesSRm5lf00PQuprbml"
 
 stripe.api_key = STRIPE_SECRET_KEY  # Set the secret key for API calls
 
-def book_hotel(request, hotel_id=None):  
+@login_required
+def book_hotel(request, hotel_id=None):
+    # Hotel data is passed via GET parameters (from the template)
     hotel = {
         'name': request.GET.get('name', 'Unknown Hotel'),
         'hotel_class': request.GET.get('class', 'N/A'),
@@ -613,32 +617,81 @@ def book_hotel(request, hotel_id=None):
         'link': request.GET.get('link', '#'),
         'image': request.GET.get('image', ''),
     }
+    
     return render(request, 'travel/book_hotel.html', {'hotel': hotel, 'STRIPE_PUBLIC_KEY': STRIPE_PUBLIC_KEY})
 
+import stripe
+from django.http import JsonResponse
+
+stripe.api_key = "sk_test_51R6BtY02ZhWfahdvq63bGLYgvE0qx0TN6X75aElMc8T0zMew6jaIFpSuDwuWA6PBEM1gbFasZQ6wJA3GesSRm5lf00PQuprbml"  # Ensure this is set
+
 def create_checkout_session(request):
-    print("Creating checkout session...")  # Log when the session creation is called
+    # Get the hotel booking data from POST request
+    price = request.POST.get('price')
+    hotel_name = request.POST.get('name')
+    hotel_class = request.POST.get('class')
+    overall_rating = request.POST.get('rating')
+    description = request.POST.get('description')
+    reviews = request.POST.get('reviews')
+    hotel_link = request.POST.get('link')
+    image_url = request.POST.get('image')
 
-    session = stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=[{
-            'price_data': {
-                'currency': 'usd',
-                'product_data': {'name': 'Booking Payment'},
-                'unit_amount': 1000,  # Amount in cents ($10)
-            },
-            'quantity': 1,
-        }],
-        mode='payment',
-        success_url="http://127.0.0.1:8000/success/",
-        cancel_url="http://127.0.0.1:8000/cancel/",
+    print(f"Received data: price={price}, hotel_name={hotel_name}, class={hotel_class}")
+
+    # Validate the price and convert to a valid decimal
+    if not price:
+        return JsonResponse({'error': 'Price is required and must be a valid number.'}, status=400)
+    
+    try:
+        price = float(price)  # Convert to float to ensure it's a valid number
+        price = round(price, 2)  # Round to 2 decimal places for safety
+    except ValueError:
+        return JsonResponse({'error': 'Invalid price format.'}, status=400)
+
+    # Save the booking to the database (assuming you have a HotelBooking model)
+    hotel_booking = HotelBooking(
+        user=request.user,
+        hotel_name=hotel_name,
+        hotel_class=hotel_class,
+        overall_rating=overall_rating,
+        description=description,
+        rate_per_night=price,
+        reviews=reviews,
+        hotel_link=hotel_link,
+        image_url=image_url,
     )
+    hotel_booking.save()
 
-    print(f"Session ID: {session.id}")  # Log the session ID for verification
-    return JsonResponse({'sessionId': session.id})
+    # Create Stripe Checkout session with card payment method
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],  # Enable card payments
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {'name': 'Booking Payment'},
+                    'unit_amount': int(price * 100),  # Convert to cents (Stripe expects amount in cents)
+                },
+                'quantity': 1,
+            }],
+            mode='payment',  # Indicate that this is a one-time payment
+            success_url="http://127.0.0.1:8000/success/",
+            cancel_url="http://127.0.0.1:8000/cancel/",
+        )
 
+        return JsonResponse({'sessionId': session.id})  # Return session ID to frontend
+
+    except stripe.error.StripeError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+from django.shortcuts import render
 
 def success(request):
     return render(request, 'travel/success.html')
+
+
+def cancel(request):
+    return render(request, 'travel/cancel.html')
 
 """from django.shortcuts import render, redirect
 from .models import Question, Response, Itinerary

@@ -34,3 +34,11 @@ class ResponseAdmin(admin.ModelAdmin):
 class ItineraryAdmin(admin.ModelAdmin):
     list_display = ('user', 'approved', 'created_at', 'content')
 
+from django.contrib import admin
+from .models import HotelBooking
+
+@admin.register(HotelBooking)
+class HotelBookingAdmin(admin.ModelAdmin):
+    list_display = ('hotel_name', 'user', 'hotel_class', 'overall_rating', 'rate_per_night', 'reviews', 'hotel_link', 'image_url')
+    search_fields = ('hotel_name', 'user__username')
+    list_filter = ('user', 'hotel_class')
