@@ -7,129 +7,97 @@
     <title>Travel Planning App</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-50 min-h-screen flex">
 
-    <!-- Header Section -->
-    <header class="flex justify-between items-center px-8 py-6 bg-white shadow-md">
-        <div class="flex items-center">
-            <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-16 h-auto">
-            <span class="ml-4 text-2xl font-bold text-green-700">PLAN&TOUR</span>
+    <!-- Sidebar Navigation -->
+    <aside class="w-64 bg-white p-6 shadow-md h-screen fixed">
+        <div class="flex items-center space-x-4 mb-6">
+            <img src="{% static 'main/images/logo.png' %}" alt="Logo" class="w-12 h-auto">
+            <span class="text-2xl font-bold text-green-700">PLAN&TOUR</span>
         </div>
-        <div class="flex items-center space-x-4">
-            <input type="text" placeholder="Search..." class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500">
-        </div>
-        <nav class="flex space-x-6">
-            <a href="{% url 'home' %}" class="text-gray-700 hover:text-green-700">Home</a>
-            <a href="{% url 'guide' %}" class="text-gray-700 hover:text-green-700">Travel Guide</a>
-            <a href="{% url 'about' %}" class="text-gray-700 hover:text-green-700">About</a>
-            <a href="{% url 'contact' %}" class="text-gray-700 hover:text-green-700">Contact</a>
+        <nav class="space-y-4">
+            <a href="{% url 'home' %}" class="block text-gray-700 hover:text-green-700">🏠 Home</a>
+            <a href="{% url 'guide' %}" class="block text-gray-700 hover:text-green-700">📖 Review</a>
+            <a href="{% url 'about' %}" class="block text-gray-700 hover:text-green-700">ℹ️ About</a>
+            <a href="{% url 'contact' %}" class="block text-gray-700 hover:text-green-700">📩 Contact</a>
         </nav>
-        
-        <div class="flex items-center space-x-4">
-            {% if user.is_authenticated %}
-                <span class="text-gray-700">Welcome, {{ user.username }}!</span>
+        <!-- Updated "Try AI Assistant" button link -->
+        <a href="{% url 'create_itinerary' %}">
+            <button class="mt-8 bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">🤖Try AI Assistant</button>
+        </a>
+    </aside>
 
-                <!-- Notification Bell Icon -->
-                <div class="relative">
-                    <button id="notificationButton" class="text-gray-700 relative">
-                        🔔
-                        {% if notifications %}
-                            <span id="notificationCount" class="absolute top-0 right-0 bg-red-600 text-white text-xs rounded-full px-2">
-                                {{ notifications.count }}
-                            </span>
-                        {% endif %}
-                    </button>
+    <!-- Main Content -->
+    <div class="ml-64 w-full">
+        <!-- Header Section -->
+        <header class="flex justify-between items-center px-8 py-4 bg-white shadow-md">
+            <a href="{% url 'plan_trip' %}">
+                <button class="bg-green-700 text-white px-4 py-2 rounded flex items-center space-x-2 hover:bg-green-800 transition">
+                    <span class="text-xl">➕</span>
+                    <span>Plan your Trip</span>
+                </button>
+            </a>
+            <div class="flex items-center space-x-4">
+                {% if user.is_authenticated %}
+                    <span class="text-gray-700">Welcome, {{ user.username }}!</span>
+                    <a href="{% url 'profile' %}" class="text-green-700 border border-green-700 px-4 py-2 rounded">👤</a>
+                    <form action="{% url 'logout' %}" method="POST" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="text-white bg-green-700 px-4 py-2 rounded">LogOut</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="text-white bg-green-700 px-4 py-2 rounded">LogIn</a>
+                    <a href="{% url 'signup' %}" class="text-green-700 border border-green-700 px-4 py-2 rounded">SignUp</a>
+                {% endif %}
+            </div>
+        </header>
 
-                    <!-- Notification Dropdown -->
-                    <div id="notificationDropdown" class="absolute right-0 mt-2 w-64 bg-white shadow-md rounded-lg hidden">
-                        <ul class="divide-y divide-gray-200">
-                            {% for notification in notifications %}
-                                <li class="p-2 text-gray-700">{{ notification.message }}</li>
-                            {% empty %}
-                                <li class="p-2 text-gray-700">No new notifications.</li>
-                            {% endfor %}
-                        </ul>
+        <!-- Review Feed Section -->
+        <section class="p-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Traveler Posts</h2>
+            <div class="space-y-6 max-w-4xl mx-auto"> <!-- Reduced width -->
+                {% for review in reviews %}
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div>
+                            <p class="text-gray-800 font-semibold">By {{ review.user.username }}</p>
+                            <p class="text-gray-500 text-sm">{{ review.created_at|date:"F j, Y" }}</p>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">{{ review.title }}</h3>
+                    <p class="text-gray-600 mb-4">{{ review.review_text }}</p> <!-- Added margin to text -->
+                    {% if review.image %}
+                    <img src="{{ review.image.url }}" alt="Review Image" class="mt-4 w-full h-auto object-contain rounded-lg"> <!-- Fixed image issue -->
+                    {% endif %}
+                    <div class="flex items-center space-x-4 mt-4">
+                        <span class="text-yellow-500">⭐ {{ review.rating }}/5</span>
+                        <button class="text-blue-500">📝 View their itinerary</button>
                     </div>
                 </div>
-
-                <a href="{% url 'profile' %}" class="text-green-700 border border-green-700 px-4 py-2 rounded">👤</a>
-                <form action="{% url 'logout' %}" method="POST" class="inline">
-                    {% csrf_token %}
-                    <button type="submit" class="text-white bg-green-700 px-4 py-2 rounded">LogOut</button>
-                </form>
-            {% else %}
-                <a href="{% url 'login' %}" class="text-white bg-green-700 px-4 py-2 rounded">LogIn</a>
-                <a href="{% url 'signup' %}" class="text-green-700 border border-green-700 px-4 py-2 rounded">SignUp</a>
-            {% endif %}
-        </div>
-    </header>
-
-    <!-- Hero Section -->
-    <section class="text-center py-12 bg-green-50">
-        <h1 class="text-4xl font-bold text-gray-800">One app for all your travel planning needs</h1>
-        <p class="mt-4 text-lg text-gray-600">Create detailed itineraries, explore new travel ideas, and manage your bookings seamlessly — all in one place.</p>
-        <div class="mt-6">
-            <a href="{% url 'plan_trip' %}">
-                <button class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition">Start Planning</button>
-            </a>
-            <button class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 transition ml-4">Get the App</button>
-        </div>
-        <img src="{% static 'main/images/Travel.jpg' %}" alt="Travel Planning" class="mx-auto mt-8 w-full max-w-2xl rounded-lg shadow-md">
-    </section>
-
-    <!-- Reviews Section -->
-<section class="py-12 px-8">
-    <h2 class="text-center text-3xl font-bold text-gray-800 mb-8">What travelers are saying</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        {% for review in reviews %}
-        <div class="bg-white border border-gray-200 rounded-lg shadow-md p-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-2">{{ review.title }}</h3>
-            <p class="text-gray-600 mb-4">{{ review.review_text }}</p>
-            <span class="text-yellow-500">⭐ {{ review.rating }}/5</span>
-            
-            {% if review.image %}
-            <img src="{{ review.image.url }}" alt="Review Image" class="mt-4 w-full h-48 object-cover rounded-lg">
-            {% endif %}
-            
-            <p class="text-gray-500 mt-4">By {{ review.user.username }} on {{ review.created_at|date:"F j, Y" }}</p>
-        </div>
-        {% empty %}
-        <p class="text-center text-gray-600">No reviews yet. Be the first to share your experience!</p>
-        {% endfor %}
-    </div>
-</section>
-
-<!-- Upcoming Trips Section -->
-<section class="py-12 px-8 bg-gray-100">
-    <h2 class="text-center text-3xl font-bold text-gray-800 mb-8">View Your Upcoming Trips</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {% for trip in upcoming_trips %}
-        <div class="bg-white border border-gray-200 rounded-lg shadow-md p-6">
-            <h3 class="text-xl font-semibold text-gray-800">{{ trip.destination }}</h3>
-            <p class="text-gray-600">From: {{ trip.start_date }} to {{ trip.end_date }}</p>
-            <div class="flex justify-between items-center mt-4">
-                <a href="{% url 'trip_details' trip.id %}" class="text-green-700 hover:text-green-800">View Details</a>
-                <a href="{% url 'delete_trip' trip.id %}" class="text-red-600 hover:text-red-800">Delete</a>
+                {% empty %}
+                <p class="text-center text-gray-600">No posts yet. Be the first to share your experience!</p>
+                {% endfor %}
             </div>
-        </div>
-        {% empty %}
-        <p class="text-center text-gray-600">No upcoming trips found.</p>
-        {% endfor %}
+        </section>
+
+        <!-- Upcoming Trips Section -->
+        <section class="p-8 bg-gray-100">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Your Upcoming Trips</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% for trip in upcoming_trips %}
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-800">{{ trip.destination }}</h3>
+                    <p class="text-gray-600">From: {{ trip.start_date }} to {{ trip.end_date }}</p>
+                    <div class="flex justify-between items-center mt-4">
+                        <a href="{% url 'trip_details' trip.id %}" class="text-green-700 hover:text-green-800">View Details</a>
+                        <a href="{% url 'delete_trip' trip.id %}" class="text-red-600 hover:text-red-800">Delete</a>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center text-gray-600">No upcoming trips found.</p>
+                {% endfor %}
+            </div>
+        </section>
     </div>
-</section>
-
-    <!-- Footer Section -->
-    <footer class="py-8 bg-white text-center border-t border-gray-200">
-        <p class="text-gray-600">&copy; 2025 PLAN&TOUR. All rights reserved.</p>
-    </footer>
-
-    <!-- JavaScript to Handle Notification Dropdown -->
-    <script>
-        document.getElementById("notificationButton").addEventListener("click", function() {
-            var dropdown = document.getElementById("notificationDropdown");
-            dropdown.classList.toggle("hidden");
-        });
-    </script>
-
 </body>
 </html>
